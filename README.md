@@ -71,7 +71,7 @@ Adding brand-new pedestrians to **GTA San Andreas** without overwriting existing
 
 | Mode | Access Method | How It Works |
 | :--- | :--- | :--- |
-| **MODE 1: Online / Hosted (`https://`)** | **[Launch Live Web App](https://redrafgg-afk.github.io/GTA-SA-Ped-Add-On-Studio/)** | Uses the modern File System Access API to read and write files directly into your chosen folder without needing to extract a ZIP archive[cite: 3]. |
+| **MODE 1: Online / Hosted (`https://`)** | **[Launch Live Web App](https://redrafgg-afk.github.io/GTA-SA-Ped-Add-On-Studio/)** | Uses the modern File System Access API to read and write files directly into your chosen folder without needing to extract a ZIP archive. |
 | **MODE 2: Offline / Local (`file://`)** | Download `index.html` from [Releases](../../releases) | Double-click `index.html` in Chrome/Edge. Imports via standard folder picker and exports a ready-to-extract `.zip` archive. |
 
 ```text
