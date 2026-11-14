@@ -256,7 +256,7 @@ GTA_SA_Ped_Addons_Output/           <-- Select THIS root folder on Import
 
 ### 5.1 Workspace Overview & Multi-Row Selection (`Select All`, `Shift+Click`, Filters)
 
-(https://i.imgur.com/x9Jot5S.png)
+![GTA SA Ped Add-On Studio Spreadsheet Workspace](https://i.imgur.com/x9Jot5S.png)
 
 - **Select All Visible Rows:** Click the top-left checkbox (`☑`) in the table header to select or deselect all currently visible/filtered rows at once.
 - **Range Selection (`Shift + Click`):** Click the checkbox on your first target row, hold **`Shift`**, and click the checkbox on your last target row—every row in between is toggled automatically.
@@ -271,7 +271,7 @@ GTA_SA_Ped_Addons_Output/           <-- Select THIS root folder on Import
 
 Never guess what a skin looks like from a generic filename like `14007.dff`! Click the **`👁️`** icon next to any `ModelName` to open the **3D Ped Preview** window.
 
-(https://i.imgur.com/UGMzUDK.png)
+![3D Ped Viewer Preview Window](https://i.imgur.com/UGMzUDK.png)
 
 - **Controls:** **Left-Drag** to orbit, **Scroll** to zoom, **Right-Drag** to pan.
 - **Fix Lying-Down Models (`🔄 Rotate 90°`):** Many GTA SA `.dff` models are exported in Z-Up coordinates and appear lying flat on their back. The viewer auto-rotates most models upright, and you can click **`🔄 Rotate 90°`** anytime to adjust orientation.
