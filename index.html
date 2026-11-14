@@ -1,0 +1,3812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GTA SA Ped Add-On Studio — Sheet Editor & 3D Viewer</title>
+  <style>
+    :root {
+      --bg-app: #0f1319;
+      --bg-panel: #161c24;
+      --bg-header: #1c2430;
+      --bg-row-even: #141922;
+      --bg-row-odd: #181e29;
+      --bg-row-hover: #212a38;
+      --bg-row-selected: #1e2f47;
+      --border: #2a3444;
+      --border-focus: #3b82f6;
+      --text-main: #e6edf7;
+      --text-muted: #8b9bb4;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-app);
+      color: var(--text-main);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    /* Top Bar */
+    .topbar {
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0f1319;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+
+    .brand h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .brand span {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button, .btn {
+      background: #232d3d;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 6px 11px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.14s ease;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) {
+      background: #2d3a4f;
+      border-color: #41516b;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-success {
+      background: #059669;
+      border-color: #059669;
+      color: #fff;
+    }
+    .btn-success:hover:not(:disabled) {
+      background: #047857;
+    }
+
+    .btn-warning {
+      background: rgba(245, 158, 11, 0.16);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: #fbbf24;
+    }
+    .btn-warning:hover:not(:disabled) {
+      background: rgba(245, 158, 11, 0.28);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.45);
+      color: #f87171;
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.28);
+    }
+
+    /* Sub-toolbar / Filter & Bulk Bar */
+    .subbar {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .search-box input, .search-box select {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .search-box input:focus, .search-box select:focus {
+      border-color: var(--border-focus);
+    }
+
+    .stats-pills {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+    }
+
+    .pill {
+      background: #1f2733;
+      border: 1px solid var(--border);
+      padding: 3px 9px;
+      border-radius: 999px;
+      color: var(--text-muted);
+    }
+    .pill strong { color: var(--text-main); }
+    .pill.clash { border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; }
+    .pill.ok { border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; }
+
+    /* Spreadsheet Container */
+    .sheet-wrapper {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: var(--bg-app);
+    }
+
+    table.sheet {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 12px;
+    }
+
+    table.sheet thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg-header);
+      color: #b7c6de;
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 8px;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    table.sheet thead th.sticky-col-0,
+    table.sheet tbody td.sticky-col-0 {
+      position: sticky;
+      left: 0;
+      z-index: 11;
+    }
+
+    table.sheet thead th.sticky-col-1,
+    table.sheet tbody td.sticky-col-1 {
+      position: sticky;
+      left: 34px;
+      z-index: 11;
+    }
+
+    table.sheet thead th.sticky-col-2,
+    table.sheet tbody td.sticky-col-2 {
+      position: sticky;
+      left: 106px;
+      z-index: 11;
+      border-right: 2px solid #38465c;
+    }
+
+    table.sheet thead th.sticky-col-0,
+    table.sheet thead th.sticky-col-1,
+    table.sheet thead th.sticky-col-2 {
+      z-index: 15;
+    }
+
+    table.sheet tbody tr:nth-child(even) td { background: var(--bg-row-even); }
+    table.sheet tbody tr:nth-child(odd) td { background: var(--bg-row-odd); }
+    table.sheet tbody tr:hover td { background: var(--bg-row-hover); }
+    table.sheet tbody tr.selected td { background: var(--bg-row-selected); }
+    table.sheet tbody tr.row-clash td.id-cell,
+    table.sheet tbody tr.row-clash td.name-cell,
+    table.sheet tbody tr.row-clash td.txd-cell {
+      background: rgba(239, 68, 68, 0.22) !important;
+      box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.65);
+    }
+
+    table.sheet tbody td.name-len-warn {
+      box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.75);
+      background: rgba(245, 158, 11, 0.14) !important;
+    }
+
+    table.sheet td {
+      padding: 0;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      vertical-align: middle;
+      height: 31px;
+    }
+
+    .cell-chk {
+      width: 34px;
+      text-align: center;
+    }
+    .cell-chk input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: var(--accent);
+      width: 14px;
+      height: 14px;
+    }
+
+    .cell-input, .cell-select {
+      width: 100%;
+      height: 30px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-main);
+      padding: 0 7px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .cell-input.mono {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+    }
+
+    .cell-select {
+      cursor: pointer;
+    }
+
+    .cell-select.mono {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+    }
+
+    .cell-select option {
+      background: #1b222e;
+      color: var(--text-main);
+    }
+
+    .cell-input:focus, .cell-select:focus {
+      background: #0d121a;
+      border-color: var(--border-focus);
+    }
+
+    /* Ped Name Cell with Quick Action Trigger */
+    .ped-name-wrap {
+      display: flex;
+      align-items: center;
+      min-width: 175px;
+    }
+
+    .ped-name-wrap .cell-input {
+      flex: 1;
+      font-weight: 600;
+      color: #93c5fd;
+    }
+
+    .row-actions-inline {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding-right: 4px;
+    }
+
+    .icon-btn {
+      padding: 3px 6px;
+      font-size: 11px;
+      border-radius: 4px;
+      background: #253042;
+      border: 1px solid #35445c;
+      color: #cbd5e1;
+    }
+    .icon-btn:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .icon-btn.del:hover:not(:disabled) {
+      background: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .file-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      margin: 0 6px;
+      white-space: nowrap;
+    }
+    .file-badge.both { background: rgba(16, 185, 129, 0.16); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .file-badge.partial { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .file-badge.none { background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25); }
+
+    .source-tag {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      padding: 0 8px;
+      white-space: nowrap;
+      font-family: var(--font-mono);
+    }
+
+    /* Multi-Select Ped Group Cell & Floating Popover */
+    .multi-grp-trigger {
+      width: 100%;
+      height: 30px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 0;
+      color: var(--text-main);
+      padding: 0 7px;
+      font-size: 11.5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      text-align: left;
+      overflow: hidden;
+    }
+    .multi-grp-trigger:hover {
+      background: #0d121a;
+      border-color: var(--border-focus);
+    }
+    .multi-grp-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .multi-grp-count {
+      background: rgba(59, 130, 246, 0.22);
+      border: 1px solid rgba(59, 130, 246, 0.5);
+      color: #93c5fd;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .multi-grp-popover {
+      position: fixed;
+      z-index: 250;
+      width: 285px;
+      max-height: 310px;
+      background: var(--bg-panel);
+      border: 1px solid #41516b;
+      border-radius: 8px;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.72);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .multi-grp-popover.open {
+      display: flex;
+    }
+    .multi-grp-popover-head {
+      padding: 7px 10px;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    .multi-grp-popover-list {
+      padding: 6px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .multi-grp-opt {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 7px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .multi-grp-opt:hover {
+      background: var(--bg-row-hover);
+    }
+
+    /* Empty State */
+    .empty-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .empty-card {
+      pointer-events: auto;
+      background: var(--bg-panel);
+      border: 1px dashed #3b4961;
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 560px;
+    }
+    .empty-card h2 {
+      color: var(--text-main);
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .empty-card p {
+      line-height: 1.55;
+      margin-bottom: 16px;
+      font-size: 12.5px;
+    }
+    .empty-card pre {
+      text-align: left;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #a5b4fc;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+
+    /* Modals & Floating 3D Viewer Window (Screen-Scale Aware) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 8, 13, 0.72);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 2vmin;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--bg-panel);
+      border: 1px solid #38465e;
+      border-radius: 10px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+      width: min(92vw, 480px);
+      max-height: 88dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      background: var(--bg-header);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .modal-header h3 {
+      font-size: 13.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-close-x {
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      color: #fca5a5;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .btn-close-x:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-footer {
+      padding: 10px 14px;
+      background: var(--bg-header);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .form-row label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .form-row input, .form-row select {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 12.5px;
+    }
+
+    .chk-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .chk-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      background: var(--bg-app);
+      padding: 6px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    /* Scale-Aware 3D Viewer Window */
+    .viewer-window {
+      width: min(92vw, 760px);
+      height: min(84dvh, 600px);
+      min-width: 300px;
+      min-height: 280px;
+      background: #161b22;
+      border: 1px solid #3b4b66;
+      border-radius: 10px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      resize: both;
+    }
+
+    .viewer-canvas-host {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: #20252e;
+      overflow: hidden;
+    }
+
+    .three-canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+
+    .viewer-overlay-msg {
+      position: absolute;
+      bottom: 10px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      font-size: 11px;
+      color: #cbd5e1;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 14px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 200;
+      pointer-events: none;
+    }
+    .toast {
+      background: #1e2634;
+      border: 1px solid #3c4d69;
+      border-left: 4px solid var(--accent);
+      color: var(--text-main);
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      animation: slideIn 0.18s ease;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.warning { border-left-color: var(--warning); }
+    .toast.error { border-left-color: var(--danger); }
+
+    @keyframes slideIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* 3-Column Independent Toggle Grid & Blacklist Chips */
+    .chk-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .blacklist-box {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      max-height: 155px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .bl-chip {
+      background: #1e2634;
+      border: 1px solid #35445c;
+      color: var(--text-main);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.12s ease;
+    }
+    .bl-chip:hover {
+      border-color: var(--accent);
+    }
+    .bl-chip.blacklisted {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.65);
+      color: #fca5a5;
+      text-decoration: line-through;
+    }
+
+    /* Simple Loading & Progress Overlay */
+    .loading-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 11, 17, 0.8);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+    }
+    .loading-backdrop.open { display: flex; }
+    .loading-card {
+      background: var(--bg-panel);
+      border: 1px solid #3b4b66;
+      border-radius: 10px;
+      padding: 20px 24px;
+      width: min(90vw, 380px);
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.65);
+    }
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid rgba(59, 130, 246, 0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #0d121a;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 10px;
+      border: 1px solid var(--border);
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      transition: width 0.12s ease;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.170.0",
+        "three/addons/": "https://esm.sh/three@0.170.0/examples/jsm/",
+        "dff-loader": "https://esm.sh/dff-loader@1.0.1?external=three"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Hidden Fallback Folder Picker (Works on file:// AND https://) -->
+  <input type="file" id="fallbackDirInput" webkitdirectory directory multiple style="display:none" />
+
+  <!-- TOP TOOLBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge">GTA SA</div>
+      <div>
+        <h1>Ped Add-On Studio</h1>
+        <span id="folderLabel">No folder selected (Supports local file:// & GitHub Pages)</span>
+      </div>
+    </div>
+
+    <div class="toolbar-group">
+      <button id="btnImportFolder" class="btn-primary" title="Select root folder containing data/, models/gta3/, and optional Add/">
+        📂 Import Folder
+      </button>
+      <button id="btnAddRow" title="Add a new ped row at the bottom">
+        ➕ Add Row
+      </button>
+      <button id="btnAutoRename" class="btn-warning" title="Auto-rename IDs & DFF/TXD files sequentially from top to bottom (14000+)">
+        🔢 Auto-Rename (14000+)
+      </button>
+      <button id="btnCheckClash" title="Check & fix ID clashes, duplicate names, or vanilla GTA SA ped names">
+        🛡️ Check & Fix Clashes
+      </button>
+      <button id="btnCopyFromPed" disabled title="Select one or more peds to copy properties from a reference ped">
+        📋 Copy Data From Ped (<span id="selCountLabel">0</span>)
+      </button>
+      <button id="btnRandomizeSelected" disabled title="Randomize selected parameter segments for checked peds">
+        🎲 Randomize Selected (<span id="randCountLabel">0</span>)
+      </button>
+      <button id="btnClearAll" class="btn-danger" title="Clear entire table and reset">
+        🗑️ Clear All
+      </button>
+      <button id="btnExportFolder" class="btn-success" title="Export peds_addons.ide, pedgrp.dat, loader.txt & synced DFF/TXD files">
+        💾 Export Output
+      </button>
+    </div>
+  </header>
+
+  <!-- FILTER & STATUS SUBBAR -->
+  <div class="subbar">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search ID, ModelName, Pedtype, Voice, Group..." style="width: 260px;" />
+      <select id="filterGroup">
+        <option value="">All Ped Groups</option>
+      </select>
+      <select id="filterFileStatus">
+        <option value="">All File Statuses</option>
+        <option value="both">DFF + TXD Complete</option>
+        <option value="partial">Missing DFF / TXD</option>
+        <option value="none">No 3D Files</option>
+      </select>
+    </div>
+
+    <div class="stats-pills">
+      <span class="pill">Total Peds: <strong id="statTotal">0</strong></span>
+      <span class="pill">Paired DFF+TXD: <strong id="statPaired">0</strong></span>
+      <span class="pill ok" id="statClashPill">Clashes: <strong id="statClashes">0</strong></span>
+    </div>
+  </div>
+
+  <!-- MAIN SPREADSHEET -->
+  <main class="sheet-wrapper" id="sheetWrapper">
+    <table class="sheet" id="pedTable">
+      <thead>
+        <tr>
+          <th class="cell-chk sticky-col-0"><input type="checkbox" id="chkSelectAll" title="Select all visible rows" /></th>
+          <th class="sticky-col-1" style="width: 72px;">ID</th>
+          <th class="sticky-col-2" style="min-width: 195px;">ModelName (DFF) & Actions</th>
+          <th style="min-width: 115px;">TxdName</th>
+          <th style="min-width: 115px;">Pedtype</th>
+          <th style="min-width: 155px;">Stat / Behavior</th>
+          <th style="min-width: 120px;">AnimGroup</th>
+          <th style="min-width: 195px;">Cars Mask</th>
+          <th style="width: 85px;">Flags</th>
+          <th style="min-width: 95px;">AnimFile</th>
+          <th style="min-width: 115px;">Radio 1</th>
+          <th style="min-width: 115px;">Radio 2</th>
+          <th style="min-width: 125px;">Audio Type</th>
+          <th style="min-width: 185px;">Voice 1</th>
+          <th style="min-width: 185px;">Voice 2</th>
+          <th style="min-width: 215px;">Ped Group (pedgrp.dat)</th>
+          <th style="min-width: 105px;">Files</th>
+          <th style="min-width: 95px;">Source</th>
+        </tr>
+      </thead>
+      <tbody id="pedTbody"></tbody>
+    </table>
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-card">
+        <h2>GTA SA Ped Add-On Workbench</h2>
+        <p>
+          Click <strong>Import Folder</strong> to select your mod directory (works both when opened locally via <code>file://</code> and hosted on GitHub Pages). Supports <strong>Merge Mode</strong> from numbered subfolders (<code>data/1</code>, <code>data/2</code>, ...) and automatic conversion of loose skins from <code>Add/</code>.
+        </p>
+        <pre>Root_Folder/
+├── data/          (peds_addons.ide, pedgrp.dat, loader.txt, or folders 1/, 2/...)
+├── models/gta3/   (paired .dff and .txd files)
+└── Add/           (optional: loose .dff & .txd skins -> auto-assigned numeric IDs)</pre>
+        <div style="display:flex; gap:8px; justify-content:center;">
+          <button id="btnEmptyImport" class="btn-primary">📂 Select Root Folder</button>
+          <button id="btnEmptyNew">➕ Start Empty Sheet</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: COPY DATA FROM ANOTHER PED (13 INDEPENDENT TOGGLES) -->
+  <div class="modal-backdrop" id="modalCopyPed">
+    <div class="modal-box" style="width: min(94vw, 540px);">
+      <div class="modal-header">
+        <h3>📋 Copy Data From Another Ped</h3>
+        <button class="btn-close-x" data-close="modalCopyPed" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Reference Ped Name / ID (Source Ped):</label>
+          <input type="text" id="copySourceInput" list="pedNamesDatalist" placeholder="Type or select reference ModelName / ID..." />
+          <datalist id="pedNamesDatalist"></datalist>
+        </div>
+        <div class="form-row">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label>Parameters to Copy to <strong id="copyTargetCount">0</strong> Selected Peds:</label>
+            <div style="display:flex; gap:4px;">
+              <button type="button" class="icon-btn" onclick="toggleAllGroup('cp-', true)">All</button>
+              <button type="button" class="icon-btn" onclick="toggleAllGroup('cp-', false)">None</button>
+            </div>
+          </div>
+          <div class="chk-grid-3">
+            <label class="chk-item"><input type="checkbox" id="cp-pedtype" checked /> Pedtype</label>
+            <label class="chk-item"><input type="checkbox" id="cp-stat" checked /> Stat</label>
+            <label class="chk-item"><input type="checkbox" id="cp-animGroup" checked /> AnimGroup</label>
+            <label class="chk-item"><input type="checkbox" id="cp-carsMask" checked /> Cars Mask</label>
+            <label class="chk-item"><input type="checkbox" id="cp-flags" checked /> Flags</label>
+            <label class="chk-item"><input type="checkbox" id="cp-animFile" checked /> AnimFile</label>
+            <label class="chk-item"><input type="checkbox" id="cp-radio1" checked /> Radio 1</label>
+            <label class="chk-item"><input type="checkbox" id="cp-radio2" checked /> Radio 2</label>
+            <label class="chk-item"><input type="checkbox" id="cp-audioType" checked /> Audio Type</label>
+            <label class="chk-item"><input type="checkbox" id="cp-voice1" checked /> Voice 1</label>
+            <label class="chk-item"><input type="checkbox" id="cp-voice2" checked /> Voice 2</label>
+            <label class="chk-item"><input type="checkbox" id="cp-pedGroup" checked /> Ped Group</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button data-close="modalCopyPed">Cancel</button>
+        <button id="btnConfirmCopyPed" class="btn-primary">Apply to Selected Peds</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RANDOMIZE SELECTED PEDS (13 INDEPENDENT TOGGLES + BLACKLIST) -->
+  <div class="modal-backdrop" id="modalRandomizePed">
+    <div class="modal-box" style="width: min(94vw, 560px);">
+      <div class="modal-header">
+        <h3>🎲 Randomize Selected Peds</h3>
+        <button class="btn-close-x" data-close="modalRandomizePed" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; justify-content:space-between; background: rgba(59, 130, 246, 0.14); border: 1px solid rgba(59, 130, 246, 0.45); padding: 7px 9px; border-radius: 6px;">
+          <label style="display:flex; align-items:center; gap:7px; cursor:pointer; font-size:12px;">
+            <input type="checkbox" id="chkSmartContextSync" checked />
+            <strong>🧠 Smart Context Sync</strong>
+          </label>
+          <div style="display:flex; align-items:center; gap:5px; font-size:11px;">
+            <span style="color:var(--text-muted);">Force Gender:</span>
+            <select id="forceGenderMode" style="background:var(--bg-app); border:1px solid var(--border); color:var(--text-main); padding:3px 7px; border-radius:4px; font-size:11.5px;">
+              <option value="auto">Auto-Detect</option>
+              <option value="F">👩 Force Female (All Selected)</option>
+              <option value="M">👨 Force Male (All Selected)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label>Independent Parameters for <strong id="randTargetCount">0</strong> Selected Peds:</label>
+            <div style="display:flex; gap:4px;">
+              <button type="button" class="icon-btn" onclick="toggleAllGroup('rnd-', true)">All</button>
+              <button type="button" class="icon-btn" onclick="toggleAllGroup('rnd-', false)">None</button>
+            </div>
+          </div>
+          <div class="chk-grid-3">
+            <label class="chk-item"><input type="checkbox" id="rnd-pedtype" checked /> Pedtype</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-stat" checked /> Stat</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-animGroup" checked /> AnimGroup</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-carsMask" checked /> Cars Mask</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-flags" checked /> Flags</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-animFile" checked /> AnimFile</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-radio1" checked /> Radio 1</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-radio2" checked /> Radio 2</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-audioType" checked /> Audio Type</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-voice1" checked /> Voice 1</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-voice2" checked /> Voice 2</label>
+            <label class="chk-item"><input type="checkbox" id="rnd-pedGroup" checked /> Ped Group</label>
+          </div>
+        </div>
+
+        <!-- RANDOMIZATION BLACKLIST UI -->
+        <div class="form-row" style="border-top: 1px solid var(--border); padding-top: 10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <label>🚫 Randomization Blacklist (Click value to toggle <code>(x)</code>):</label>
+            <button type="button" id="btnClearBlacklist" class="icon-btn del" title="Clear all blacklisted values">Reset All (0)</button>
+          </div>
+          <select id="blacklistParamSelect">
+            <option value="pedtype">Parameter: Pedtype</option>
+            <option value="stat">Parameter: Stat / Behavior</option>
+            <option value="animGroup">Parameter: AnimGroup</option>
+            <option value="carsMask">Parameter: Cars Mask</option>
+            <option value="flags">Parameter: Flags</option>
+            <option value="animFile">Parameter: AnimFile</option>
+            <option value="radio">Parameter: Radio 1 & Radio 2</option>
+            <option value="audioType">Parameter: Audio Type</option>
+            <option value="voice">Parameter: Voice 1 & Voice 2</option>
+            <option value="pedGroup">Parameter: Ped Group (pedgrp.dat)</option>
+          </select>
+          <div class="blacklist-box" id="blacklistChipsContainer"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button data-close="modalRandomizePed">Cancel</button>
+        <button id="btnConfirmRandomizePed" class="btn-primary">Randomize Selected Peds</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EXPORT OPTIONS (OPTIONAL VANILLA PEDGRP.DAT MERGE) -->
+  <div class="modal-backdrop" id="modalExportOptions">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>💾 Export Add-On Output</h3>
+        <button class="btn-close-x" data-close="modalExportOptions" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Original GTA SA <code>data/pedgrp.dat</code> (Optional — Recommended):</label>
+          <input type="file" id="vanillaPedGrpInput" accept=".dat,.txt" />
+          <span id="vanillaPedGrpStatus" style="font-size:11px; color:var(--text-muted);">
+            Not attached — <code>pedgrp.dat</code> will only contain your add-on peds. Attach your game's original <code>pedgrp.dat</code> to append new peds without replacing vanilla spawns!
+          </span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button data-close="modalExportOptions">Cancel</button>
+        <button id="btnConfirmExport" class="btn-success">Start Export</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING & PROGRESS OVERLAY -->
+  <div class="loading-backdrop" id="loadingOverlay">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <div id="loadingTitle" style="font-weight:700; font-size:13.5px; color:var(--text-main);">Processing...</div>
+      <div id="loadingSub" style="font-size:11.5px; color:var(--text-muted); margin-top:4px;">Please wait...</div>
+      <div class="progress-track">
+        <div class="progress-fill" id="loadingProgressBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AUTO-RENAME OPTIONS -->
+  <div class="modal-backdrop" id="modalAutoRename">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🔢 Auto-Rename & Sync ID / DFF / TXD</h3>
+        <button class="btn-close-x" data-close="modalAutoRename" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Starting ID (Default 14000):</label>
+          <input type="number" id="renameStartId" value="14000" min="1" max="65535" />
+        </div>
+        <div class="form-row">
+          <label>ModelName & TxdName Naming Mode:</label>
+          <select id="renameMode">
+            <option value="numeric">Numeric Only (14000, 14001, ... — Anti-Vanilla Replace)</option>
+            <option value="prefix">Prefix + ID (ped14000, ped14001, ...)</option>
+            <option value="id_only">Sequential IDs Only (Keep Names If No Clash)</option>
+          </select>
+        </div>
+        <p style="font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
+          All paired <code>.dff</code> and <code>.txd</code> files as well as <code>pedgrp.dat</code> references will automatically stay synchronized upon export.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button data-close="modalAutoRename">Cancel</button>
+        <button id="btnConfirmAutoRename" class="btn-warning">Apply Auto-Rename</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING WINDOW: 3D PED VIEWER (SCALE-AWARE, STRIPPED, ZERO MEMORY LEAK) -->
+  <div class="modal-backdrop" id="modalViewer">
+    <div class="viewer-window" id="viewerWindow">
+      <div class="modal-header">
+        <h3>
+          <span>🧍 3D Ped Preview:</span>
+          <span id="viewerTitle" style="color: #93c5fd; font-family: var(--font-mono);">—</span>
+        </h3>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button id="btnViewerRotate" class="icon-btn" title="Rotate model orientation 90° (if lying flat/sideways)">🔄 Rotate 90°</button>
+          <button id="btnViewerWire" class="icon-btn" title="Toggle Wireframe">Wireframe</button>
+          <button id="btnViewerReset" class="icon-btn" title="Reset Camera Position">Reset Cam</button>
+          <button id="btnCloseViewer" class="btn-close-x" title="Close Viewer & Free GPU Memory (Esc)">✕</button>
+        </div>
+      </div>
+      <div class="viewer-canvas-host" id="viewerCanvasHost">
+        <div class="viewer-overlay-msg" style="flex-direction: column; align-items: flex-start; gap: 4px; background: rgba(15, 19, 25, 0.72); padding: 7px 10px; border-radius: 6px; border: 1px solid rgba(59, 75, 102, 0.5);">
+          <div style="display:flex; justify-content:space-between; width:100%; gap:12px;">
+            <span id="viewerStatus" style="font-weight:600; color:#93c5fd;">Loading model...</span>
+            <span id="viewerFileSize" style="font-family:var(--font-mono); color:#6ee7b7;">DFF: - | TXD: -</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; width:100%; gap:12px; color:#94a3b8;">
+            <span id="viewerMeshStats" style="font-family:var(--font-mono);">Verts: 0 • Tris: 0 • Meshes: 0</span>
+            <span>Drag: Orbit • Scroll: Zoom • Right-Click: Pan</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING MULTI-SELECT POPOVER FOR PED GROUPS -->
+  <div class="multi-grp-popover" id="pedGroupPopover">
+    <div class="multi-grp-popover-head">
+      <span id="pedGroupPopoverTitle">Select Ped Groups</span>
+      <div style="display:flex; gap:4px;">
+        <button type="button" id="btnPopoverClearGroups" class="icon-btn del">None</button>
+        <button type="button" id="btnPopoverClose" class="icon-btn">Done</button>
+      </div>
+    </div>
+    <div class="multi-grp-popover-list" id="pedGroupPopoverList"></div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // =========================================================================
+    // 1. GTA SA REFERENCE DICTIONARIES & DROPDOWN OPTIONS
+    // =========================================================================
+    const PED_TYPES = [
+      'CIVMALE', 'CIVFEMALE', 'CRIMINAL', 'PROSTITUTE', 'COP', 'MEDIC', 'FIREMAN',
+      'GANG1', 'GANG2', 'GANG3', 'GANG4', 'GANG5', 'GANG6', 'GANG7', 'GANG8', 'GANG9', 'GANG10',
+      'DEALER', 'SPECIAL', 'MISSION1', 'MISSION2', 'MISSION3', 'MISSION4', 'MISSION5', 'MISSION6', 'MISSION7', 'MISSION8'
+    ];
+
+    const PED_STATS = [
+      'STAT_COWARD', 'STAT_STREET_GUY', 'STAT_STREET_GIRL', 'STAT_SUIT_GUY', 'STAT_SUIT_GIRL',
+      'STAT_TOUGH_GUY', 'STAT_TOUGH_GIRL', 'STAT_CRIMINAL', 'STAT_PROSTITUTE', 'STAT_SENSIBLE_GUY',
+      'STAT_BEACH_GUY', 'STAT_BEACH_GIRL', 'STAT_OLD_GUY', 'STAT_OLD_GIRL', 'STAT_TRAMP_MALE',
+      'STAT_TRAMP_FEMALE', 'STAT_TOURIST', 'STAT_SHOPPER', 'STAT_TAXIDRIVER', 'STAT_GEEK_GUY',
+      'STAT_GEEK_GIRL', 'STAT_SKATER', 'STAT_COP', 'STAT_MEDIC', 'STAT_FIREMAN',
+      'STAT_GANG1', 'STAT_GANG2', 'STAT_GANG3', 'STAT_GANG4', 'STAT_GANG5',
+      'STAT_GANG6', 'STAT_GANG7', 'STAT_GANG8', 'STAT_GANG9', 'STAT_GANG10', 'STAT_STD_MISSION'
+    ];
+
+    const ANIM_GROUPS = [
+      'man', 'woman', 'sexywoman', 'busywoman', 'oldwoman', 'oldfatwoman', 'fatwoman',
+      'pro', 'jogwoman', 'jogger', 'oldman', 'fatman', 'gang1', 'gang2', 'beach',
+      'cop', 'swat', 'medic', 'skate', 'shuffle', 'player'
+    ];
+
+    const ANIM_FILES = ['null', 'man', 'beach', 'cop', 'medic', 'gang', 'skate'];
+
+    const RADIO_STATIONS = [
+      { v: '0', label: '0 - Rap' },
+      { v: '1', label: '1 - Pop' },
+      { v: '2', label: '2 - Interview' },
+      { v: '3', label: '3 - Soul' },
+      { v: '4', label: '4 - Rock' },
+      { v: '5', label: '5 - Current Affairs' },
+      { v: '6', label: '6 - Spanish' },
+      { v: '7', label: '7 - Fernando' },
+      { v: '8', label: '8 - New Wave' },
+      { v: '9', label: '9 - Off' },
+      { v: '10', label: '10 - User / Random' }
+    ];
+
+    const AUDIO_TYPES = [
+      'PED_TYPE_GEN', 'PED_TYPE_PLAYER', 'PED_TYPE_COP', 'PED_TYPE_EMG',
+      'PED_TYPE_GANG', 'PED_TYPE_GFD', 'PED_TYPE_SPC'
+    ];
+
+    const CAR_MASK_PRESETS = [
+      // General & All Vehicles
+      { v: '1FFF', label: '1FFF — All Vehicles + Pedestrians' },
+      { v: '0FFF', label: '0FFF — All Vehicles (No Walking)' },
+      { v: '1000', label: '1000 — Pedestrians Only (Walking)' },
+      { v: '0000', label: '0000 — Disabled (Never Spawns)' },
+      // Cars (By Class)
+      { v: '100F', label: '100F — All Cars + Pedestrians' },
+      { v: '000F', label: '000F — All Cars (No Walking)' },
+      { v: '1001', label: '1001 — Normal Cars + Pedestrians' },
+      { v: '1002', label: '1002 — Poor / Cheap Cars + Pedestrians' },
+      { v: '1004', label: '1004 — Luxury Family Cars + Pedestrians' },
+      { v: '1008', label: '1008 — Sports / Exotic Cars + Pedestrians' },
+      { v: '1003', label: '1003 — Normal & Cheap Cars + Walking' },
+      { v: '100C', label: '100C — Luxury & Sports Cars + Walking' },
+      { v: '1007', label: '1007 — All Non-Sports Cars + Walking' },
+      // Two-Wheelers (Motorcycles & Bicycles)
+      { v: '1980', label: '1980 — All Bikes, Mopeds & Bicycles + Walking' },
+      { v: '1180', label: '1180 — Motorcycles & Mopeds + Walking' },
+      { v: '1100', label: '1100 — Heavy / Sport Motorcycles + Walking' },
+      { v: '1080', label: '1080 — Scooters / Mopeds + Walking' },
+      { v: '1800', label: '1800 — Bicycles Only + Walking' },
+      { v: '0100', label: '0100 — Motorcycles Only (No Walking)' },
+      { v: '0800', label: '0800 — Bicycles Only (No Walking)' },
+      // Car & Two-Wheeler Combinations
+      { v: '198F', label: '198F — All Cars, Bikes & Bicycles + Walking' },
+      { v: '118F', label: '118F — All Cars, Bikes & Mopeds + Walking' },
+      { v: '110F', label: '110F — All Cars & Heavy Bikes + Walking' },
+      { v: '180F', label: '180F — All Cars & Bicycles + Walking' },
+      { v: '1983', label: '1983 — Standard Cars, Bikes & Bicycles + Walking' },
+      { v: '1803', label: '1803 — Standard Cars & Bicycles + Walking' },
+      { v: '1901', label: '1901 — Normal Cars, Bikes & Bicycles + Walking' },
+      // Workers, Trucks & Taxis
+      { v: '1070', label: '1070 — Workers, Trucks & Taxis + Walking' },
+      { v: '1030', label: '1030 — Worker Vehicles & Trucks + Walking' },
+      { v: '1010', label: '1010 — Worker Vehicles / Pickups + Walking' },
+      { v: '1020', label: '1020 — Heavy Trucks & Buses + Walking' },
+      { v: '1040', label: '1040 — Taxis Only + Walking' },
+      { v: '0020', label: '0020 — Trucks / Buses Only (No Walking)' },
+      { v: '0040', label: '0040 — Taxis Only (No Walking)' },
+      { v: '1013', label: '1013 — Rural / Country Folk (Pickups, Cheap Cars)' },
+      { v: '1033', label: '1033 — Field Workers & Standard Cars' },
+      // Boats & Coastal
+      { v: '1600', label: '1600 — All Boats + Pedestrians' },
+      { v: '1200', label: '1200 — Yachts / Speedboats + Walking' },
+      { v: '1400', label: '1400 — Fishing / Work Boats + Walking' },
+      { v: '0600', label: '0600 — Boats Only (No Walking)' },
+      { v: '120C', label: '120C — Wealthy Citizens (Yachts, Luxury Cars)' },
+      { v: '1412', label: '1412 — Fishermen (Work Boats, Cheap Cars)' },
+      { v: '170F', label: '170F — All Cars, Bikes & Boats + Walking' }
+    ];
+
+    const SPC_GA_VOICES = [
+      { v: 'VOICE_GEN_WBDYG1', label: 'Bank_001 - WBDYG1' },
+      { v: 'VOICE_GEN_WBDYG2', label: 'Bank_002 - WBDYG2' },
+      { v: 'VOICE_GEN_BFORI', label: 'Bank_003 - BFORI' },
+      { v: 'VOICE_GEN_BFOST', label: 'Bank_004 - BFOST' },
+      { v: 'VOICE_GEN_BFYBE', label: 'Bank_005 - BFYBE' },
+      { v: 'VOICE_GEN_BFYBU', label: 'Bank_006 - BFYBU' },
+      { v: 'VOICE_GEN_BFYCRP', label: 'Bank_007 - BFYCRP' },
+      { v: 'VOICE_GEN_BFYPRO', label: 'Bank_008 - BFYPRO' },
+      { v: 'VOICE_GEN_BFYRI', label: 'Bank_009 - BFYRI' },
+      { v: 'VOICE_GEN_BFYST', label: 'Bank_010 - BFYST' },
+      { v: 'VOICE_GEN_BIKDRUG', label: 'Bank_011 - BIKDRUG' },
+      { v: 'VOICE_GEN_BIKERA', label: 'Bank_012 - BIKERA' },
+      { v: 'VOICE_GEN_BIKERB', label: 'Bank_013 - BIKERB' },
+      { v: 'VOICE_GEN_BMOCD', label: 'Bank_014 - BMOCD' },
+      { v: 'VOICE_GEN_BMORI', label: 'Bank_015 - BMORI' },
+      { v: 'VOICE_GEN_BMOSEC', label: 'Bank_016 - BMOSEC' },
+      { v: 'VOICE_GEN_BMOST', label: 'Bank_017 - BMOST' },
+      { v: 'VOICE_GEN_BMOTR1', label: 'Bank_018 - BMOTR1' },
+      { v: 'VOICE_GEN_BMYAP', label: 'Bank_019 - BMYAP' },
+      { v: 'VOICE_GEN_BMYBE', label: 'Bank_020 - BMYBE' },
+      { v: 'VOICE_GEN_BMYBOUN', label: 'Bank_021 - BMYBOUN' },
+      { v: 'VOICE_GEN_VBMYBOX', label: 'Bank_022 - VBMYBOX' },
+      { v: 'VOICE_GEN_BMYBU', label: 'Bank_023 - BMYBU' },
+      { v: 'VOICE_GEN_BMYCG', label: 'Bank_024 - BMYCG' },
+      { v: 'VOICE_GEN_BMYCON', label: 'Bank_025 - BMYCON' },
+      { v: 'VOICE_GEN_BMYCR', label: 'Bank_026 - BMYCR' },
+      { v: 'VOICE_GEN_BMYDJ', label: 'Bank_027 - BMYDJ' },
+      { v: 'VOICE_GEN_BMYDRUG', label: 'Bank_028 - BMYDRUG' },
+      { v: 'VOICE_GEN_BMYMOUN', label: 'Bank_029 - BMYMOUN' },
+      { v: 'VOICE_GEN_BMYPOL1', label: 'Bank_030 - BMYPOL1' },
+      { v: 'VOICE_GEN_BMYPOL2', label: 'Bank_031 - BMYPOL2' },
+      { v: 'VOICE_GEN_BMYRI', label: 'Bank_032 - BMYRI' },
+      { v: 'VOICE_GEN_BMYST', label: 'Bank_033 - BMYST' },
+      { v: 'VOICE_GEN_BMYPIMP', label: 'Bank_034 - BMYPIMP' },
+      { v: 'VOICE_GEN_CWFOFR', label: 'Bank_035 - CWFOFR' },
+      { v: 'VOICE_GEN_CWFOHB', label: 'Bank_036 - CWFOHB' },
+      { v: 'VOICE_GEN_CWFYFR1', label: 'Bank_037 - CWFYFR1' },
+      { v: 'VOICE_GEN_CWFYFR2', label: 'Bank_038 - CWFYFR2' },
+      { v: 'VOICE_GEN_CWFYHB1', label: 'Bank_039 - CWFYHB1' },
+      { v: 'VOICE_GEN_CWMOFR1', label: 'Bank_040 - CWMOFR1' },
+      { v: 'VOICE_GEN_CWMOHB1', label: 'Bank_041 - CWMOHB1' },
+      { v: 'VOICE_GEN_CWMOHB2', label: 'Bank_042 - CWMOHB2' },
+      { v: 'VOICE_GEN_CWMYFR', label: 'Bank_043 - CWMYFR' },
+      { v: 'VOICE_GEN_CWMYHB1', label: 'Bank_044 - CWMYHB1' },
+      { v: 'VOICE_GEN_CWMYHB2', label: 'Bank_045 - CWMYHB2' },
+      { v: 'VOICE_GEN_DNFOLC1', label: 'Bank_046 - DNFOLC1' },
+      { v: 'VOICE_GEN_DNFOLC2', label: 'Bank_047 - DNFOLC2' },
+      { v: 'VOICE_GEN_DNFYLC', label: 'Bank_048 - DNFYLC' },
+      { v: 'VOICE_GEN_DNMOLC1', label: 'Bank_049 - DNMOLC1' },
+      { v: 'VOICE_GEN_DNMOLC2', label: 'Bank_050 - DNMOLC2' },
+      { v: 'VOICE_GEN_DNMYLC', label: 'Bank_051 - DNMYLC' },
+      { v: 'VOICE_GEN_DWFOLC', label: 'Bank_052 - DWFOLC' },
+      { v: 'VOICE_GEN_DWFYLC1', label: 'Bank_053 - DWFYLC1' },
+      { v: 'VOICE_GEN_DWFYLC2', label: 'Bank_054 - DWFYLC2' },
+      { v: 'VOICE_GEN_DWMOLC1', label: 'Bank_055 - DWMOLC1' },
+      { v: 'VOICE_GEN_DWMOLC2', label: 'Bank_056 - DWMOLC2' },
+      { v: 'VOICE_GEN_DWMYLC1', label: 'Bank_057 - DWMYLC1' },
+      { v: 'VOICE_GEN_DWMYLC2', label: 'Bank_058 - DWMYLC2' },
+      { v: 'VOICE_GEN_HFORI', label: 'Bank_059 - HFORI' },
+      { v: 'VOICE_GEN_HFOST', label: 'Bank_060 - HFOST' },
+      { v: 'VOICE_GEN_HFYBE', label: 'Bank_061 - HFYBE' },
+      { v: 'VOICE_GEN_HFYPRO', label: 'Bank_062 - HFYPRO' },
+      { v: 'VOICE_GEN_HFYRI', label: 'Bank_063 - HFYRI' },
+      { v: 'VOICE_GEN_HFYST', label: 'Bank_064 - HFYST' },
+      { v: 'VOICE_GEN_HMORI', label: 'Bank_065 - HMORI' },
+      { v: 'VOICE_GEN_HMOST', label: 'Bank_066 - HMOST' },
+      { v: 'VOICE_GEN_HMYBE', label: 'Bank_067 - HMYBE' },
+      { v: 'VOICE_GEN_HMYCM', label: 'Bank_068 - HMYCM' },
+      { v: 'VOICE_GEN_HMYCR', label: 'Bank_069 - HMYCR' },
+      { v: 'VOICE_GEN_HMYDRUG', label: 'Bank_070 - HMYDRUG' },
+      { v: 'VOICE_GEN_HMYRI', label: 'Bank_071 - HMYRI' },
+      { v: 'VOICE_GEN_HMYST', label: 'Bank_072 - HMYST' },
+      { v: 'VOICE_GEN_IMYST', label: 'Bank_073 - IMYST (unused)' },
+      { v: 'VOICE_GEN_IRFYST', label: 'Bank_074 - IRFYST (unused)' },
+      { v: 'VOICE_GEN_IRMYST', label: 'Bank_075 - IRMYST (unused)' },
+      { v: 'VOICE_GEN_MAFFA', label: 'Bank_076 - MAFFA' },
+      { v: 'VOICE_GEN_MAFFB', label: 'Bank_077 - MAFFB' },
+      { v: 'VOICE_GEN_MALE01', label: 'Bank_078 - MALE01' },
+      { v: 'VOICE_GEN_NOVOICE', label: 'Bank_079 - NOVOICE (WFYSEX, OMYKARA, LAFD1, etc.)' },
+      { v: 'VOICE_GEN_OFORI', label: 'Bank_080 - OFORI' },
+      { v: 'VOICE_GEN_OFOST', label: 'Bank_081 - OFOST' },
+      { v: 'VOICE_GEN_OFYRI', label: 'Bank_082 - OFYRI' },
+      { v: 'VOICE_GEN_OFYST', label: 'Bank_083 - OFYST' },
+      { v: 'VOICE_GEN_OMOBOAT', label: 'Bank_084 - OMOBOAT' },
+      { v: 'VOICE_GEN_OMOKUNG', label: 'Bank_085 - OMOKUNG' },
+      { v: 'VOICE_GEN_OMORI', label: 'Bank_086 - OMORI' },
+      { v: 'VOICE_GEN_OMOST', label: 'Bank_087 - OMOST' },
+      { v: 'VOICE_GEN_OMYRI', label: 'Bank_088 - OMYRI' },
+      { v: 'VOICE_GEN_OMYST', label: 'Bank_089 - OMYST' },
+      { v: 'VOICE_GEN_SBFORI', label: 'Bank_090 - SBFORI' },
+      { v: 'VOICE_GEN_SBFOST', label: 'Bank_091 - SBFOST' },
+      { v: 'VOICE_GEN_SBFYPRO', label: 'Bank_092 - SBFYPRO' },
+      { v: 'VOICE_GEN_SBFYRI', label: 'Bank_093 - SBFYRI' },
+      { v: 'VOICE_GEN_SBFYST', label: 'Bank_094 - SBFYST' },
+      { v: 'VOICE_GEN_SBFYSTR', label: 'Bank_095 - SBFYSTR' },
+      { v: 'VOICE_GEN_SBMOCD', label: 'Bank_096 - SBMOCD' },
+      { v: 'VOICE_GEN_SBMORI', label: 'Bank_097 - SBMORI' },
+      { v: 'VOICE_GEN_SBMOST', label: 'Bank_098 - SBMOST' },
+      { v: 'VOICE_GEN_SBMOTR1', label: 'Bank_099 - SBMOTR1' },
+      { v: 'VOICE_GEN_SBMOTR2', label: 'Bank_100 - SBMOTR2' },
+      { v: 'VOICE_GEN_SBMYCR', label: 'Bank_101 - SBMYCR' },
+      { v: 'VOICE_GEN_SBMYRI', label: 'Bank_102 - SBMYRI' },
+      { v: 'VOICE_GEN_SBMYST', label: 'Bank_103 - SBMYST' },
+      { v: 'VOICE_GEN_SBMYTR3', label: 'Bank_104 - SBMYTR3' },
+      { v: 'VOICE_GEN_SFYPRO', label: 'Bank_105 - SFYPRO' },
+      { v: 'VOICE_GEN_SHFYPRO', label: 'Bank_106 - SHFYPRO' },
+      { v: 'VOICE_GEN_SHMYCR', label: 'Bank_107 - SHMYCR' },
+      { v: 'VOICE_GEN_SMYST', label: 'Bank_108 - SMYST' },
+      { v: 'VOICE_GEN_SMYST2', label: 'Bank_109 - SMYST2' },
+      { v: 'VOICE_GEN_SOFORI', label: 'Bank_110 - SOFORI' },
+      { v: 'VOICE_GEN_SOFOST', label: 'Bank_111 - SOFOST' },
+      { v: 'VOICE_GEN_SOFYBU', label: 'Bank_112 - SOFYBU' },
+      { v: 'VOICE_GEN_SOFYRI', label: 'Bank_113 - SOFYRI' },
+      { v: 'VOICE_GEN_SOFYST', label: 'Bank_114 - SOFYST' },
+      { v: 'VOICE_GEN_SOMOBU', label: 'Bank_115 - SOMOBU' },
+      { v: 'VOICE_GEN_SOMORI', label: 'Bank_116 - SOMORI' },
+      { v: 'VOICE_GEN_SOMOST', label: 'Bank_117 - SOMOST' },
+      { v: 'VOICE_GEN_SOMYAP', label: 'Bank_118 - SOMYAP' },
+      { v: 'VOICE_GEN_SOMYBU', label: 'Bank_119 - SOMYBU' },
+      { v: 'VOICE_GEN_SOMYRI', label: 'Bank_120 - SOMYRI' },
+      { v: 'VOICE_GEN_SOMYST', label: 'Bank_121 - SOMYST' },
+      { v: 'VOICE_GEN_SWFOPRO', label: 'Bank_122 - SWFOPRO' },
+      { v: 'VOICE_GEN_SWFORI', label: 'Bank_123 - SWFORI' },
+      { v: 'VOICE_GEN_SWFOST', label: 'Bank_124 - SWFOST' },
+      { v: 'VOICE_GEN_SWFYRI', label: 'Bank_125 - SWFYRI' },
+      { v: 'VOICE_GEN_SWFYST', label: 'Bank_126 - SWFYST' },
+      { v: 'VOICE_GEN_SWFYSTR', label: 'Bank_127 - SWFYSTR' },
+      { v: 'VOICE_GEN_SWMOCD', label: 'Bank_128 - SWMOCD' },
+      { v: 'VOICE_GEN_SWMORI', label: 'Bank_129 - SWMORI' },
+      { v: 'VOICE_GEN_SWMOST', label: 'Bank_130 - SWMOST' },
+      { v: 'VOICE_GEN_SWMOTR1', label: 'Bank_131 - SWMOTR1' },
+      { v: 'VOICE_GEN_SWMOTR2', label: 'Bank_132 - SWMOTR2' },
+      { v: 'VOICE_GEN_SWMOTR3', label: 'Bank_133 - SWMOTR3' },
+      { v: 'VOICE_GEN_SWMOTR4', label: 'Bank_134 - SWMOTR4' },
+      { v: 'VOICE_GEN_SWMOTR5', label: 'Bank_135 - SWMOTR5' },
+      { v: 'VOICE_GEN_SWMYCR', label: 'Bank_136 - SWMYCR' },
+      { v: 'VOICE_GEN_SWMYHP1', label: 'Bank_137 - SWMYHP1' },
+      { v: 'VOICE_GEN_SWMYHP2', label: 'Bank_138 - SWMYHP2' },
+      { v: 'VOICE_GEN_SWMYRI', label: 'Bank_139 - SWMYRI' },
+      { v: 'VOICE_GEN_SWMYST', label: 'Bank_140 - SWMYST' },
+      { v: 'VOICE_GEN_VBFYPRO', label: 'Bank_141 - VBFYPRO' },
+      { v: 'VOICE_GEN_VBFYST2', label: 'Bank_142 - VBFYST2' },
+      { v: 'VOICE_GEN_VBMOCD', label: 'Bank_143 - VBMOCD' },
+      { v: 'VOICE_GEN_VBMYCR', label: 'Bank_144 - VBMYCR' },
+      { v: 'VOICE_GEN_VBMYELV', label: 'Bank_145 - VBMYELV' },
+      { v: 'VOICE_GEN_VHFYPRO', label: 'Bank_146 - VHFYPRO' },
+      { v: 'VOICE_GEN_VHFYST3', label: 'Bank_147 - VHFYST3' },
+      { v: 'VOICE_GEN_VHMYCR', label: 'Bank_148 - VHMYCR' },
+      { v: 'VOICE_GEN_VHMYELV', label: 'Bank_149 - VHMYELV' },
+      { v: 'VOICE_GEN_VIMYELV', label: 'Bank_150 - VIMYELV' },
+      { v: 'VOICE_GEN_VWFYPRO', label: 'Bank_151 - VWFYPRO' },
+      { v: 'VOICE_GEN_VWFYST1', label: 'Bank_152 - VWFYST1' },
+      { v: 'VOICE_GEN_VWFYMAI', label: 'Bank_153 - VWFYMAI' },
+      { v: 'VOICE_GEN_VWMOTR1', label: 'Bank_154 - VWMOTR1' },
+      { v: 'VOICE_GEN_VWMOTR2', label: 'Bank_155 - VWMOTR2' },
+      { v: 'VOICE_GEN_VWMYAP', label: 'Bank_156 - VWMYAP' },
+      { v: 'VOICE_GEN_VWMYBJD', label: 'Bank_157 - VWMYBJD' },
+      { v: 'VOICE_GEN_VWMYCD', label: 'Bank_158 - VWMYCD' },
+      { v: 'VOICE_GEN_VWMYCR', label: 'Bank_159 - VWMYCR' },
+      { v: 'VOICE_GEN_WFOPJ', label: 'Bank_160 - WFOPJ (Unused)' },
+      { v: 'VOICE_GEN_WFORI', label: 'Bank_161 - WFORI' },
+      { v: 'VOICE_GEN_WFOST', label: 'Bank_162 - WFOST' },
+      { v: 'VOICE_GEN_WFYBE', label: 'Bank_163 - WFYBE' },
+      { v: 'VOICE_GEN_WFYBU', label: 'Bank_164 - WFYBU' },
+      { v: 'VOICE_GEN_WFYCRK', label: 'Bank_165 - WFYCRK' },
+      { v: 'VOICE_GEN_WFYCRP', label: 'Bank_166 - WFYCRP' },
+      { v: 'VOICE_GEN_WFYJG', label: 'Bank_167 - WFYJG' },
+      { v: 'VOICE_GEN_WFYLG', label: 'Bank_168 - WFYLG' },
+      { v: 'VOICE_GEN_WFYPRO', label: 'Bank_169 - WFYPRO' },
+      { v: 'VOICE_GEN_WFYRI', label: 'Bank_170 - WFYRI' },
+      { v: 'VOICE_GEN_WFYRO', label: 'Bank_171 - WFYRO' },
+      { v: 'VOICE_GEN_WFYST', label: 'Bank_172 - WFYST' },
+      { v: 'VOICE_GEN_WFYSTEW', label: 'Bank_173 - WFYSTEW' },
+      { v: 'VOICE_GEN_WMOMIB', label: 'Bank_174 - WMOMIB' },
+      { v: 'VOICE_GEN_WMOPJ', label: 'Bank_175 - WMOPJ' },
+      { v: 'VOICE_GEN_WMOPREA', label: 'Bank_176 - WMOPREA' },
+      { v: 'VOICE_GEN_WMORI', label: 'Bank_177 - WMORI' },
+      { v: 'VOICE_GEN_WMOSCI', label: 'Bank_178 - WMOSCI' },
+      { v: 'VOICE_GEN_WMOST', label: 'Bank_179 - WMOST' },
+      { v: 'VOICE_GEN_WMOTR1', label: 'Bank_180 - WMOTR1' },
+      { v: 'VOICE_GEN_WMYBE', label: 'Bank_181 - WMYBE' },
+      { v: 'VOICE_GEN_WMYBMX', label: 'Bank_182 - WMYBMX' },
+      { v: 'VOICE_GEN_WMYBOUN', label: 'Bank_183 - WMYBOUN' },
+      { v: 'VOICE_GEN_VWMYBOX', label: 'Bank_184 - VWMYBOX' },
+      { v: 'VOICE_GEN_WMYBP', label: 'Bank_185 - WMYBP' },
+      { v: 'VOICE_GEN_WMYBU', label: 'Bank_186 - WMYBU' },
+      { v: 'VOICE_GEN_WMYCD1', label: 'Bank_187 - WMYCD1' },
+      { v: 'VOICE_GEN_WMYCD2', label: 'Bank_188 - WMYCD2 (unused)' },
+      { v: 'VOICE_GEN_WMYCH', label: 'Bank_189 - WMYCH' },
+      { v: 'VOICE_GEN_WMYCON', label: 'Bank_190 - WMYCON' },
+      { v: 'VOICE_GEN_WMYCONB', label: 'Bank_191 - WMYCONB' },
+      { v: 'VOICE_GEN_WMYCR', label: 'Bank_192 - WMYCR' },
+      { v: 'VOICE_GEN_WMYDRUG', label: 'Bank_193 - WMYDRUG' },
+      { v: 'VOICE_GEN_WMYGAR', label: 'Bank_194 - HMOGAR (WMYGAR)' },
+      { v: 'VOICE_GEN_WMYGOL1', label: 'Bank_195 - WMYGOL1' },
+      { v: 'VOICE_GEN_WMYGOL2', label: 'Bank_196 - WMYGOL2' },
+      { v: 'VOICE_GEN_WMYJG', label: 'Bank_197 - WMYJG' },
+      { v: 'VOICE_GEN_WMYLG', label: 'Bank_198 - WMYLG' },
+      { v: 'VOICE_GEN_WMYMECH', label: 'Bank_199 - WMYMECH' },
+      { v: 'VOICE_GEN_WMYMOUN', label: 'Bank_200 - WMYMOUN' },
+      { v: 'VOICE_GEN_WMYPLT', label: 'Bank_201 - WMYPLT' },
+      { v: 'VOICE_GEN_WMYRI', label: 'Bank_202 - WMYRI' },
+      { v: 'VOICE_GEN_WMYRO', label: 'Bank_203 - WMYRO' },
+      { v: 'VOICE_GEN_WMYSGRAD', label: 'Bank_204 - WMYSGRD (WMYSGRAD)' },
+      { v: 'VOICE_GEN_WMYSKAT', label: 'Bank_205 - WMYSKAT' },
+      { v: 'VOICE_GEN_WMYST', label: 'Bank_206 - WMYST' },
+      { v: 'VOICE_GEN_WMYTX1', label: 'Bank_207 - WMYTX1 (unused)' },
+      { v: 'VOICE_GEN_WMYTX2', label: 'Bank_208 - WMYTX2 (unused)' },
+      { v: 'VOICE_GEN_WMYVA', label: 'Bank_209 - WMYVA' }
+    ];
+
+    const GANG_VOICE_GROUPS = [
+      ['VOICE_GNG_BALLAS1', 'VOICE_GNG_BALLAS2', 'VOICE_GNG_BALLAS3', 'VOICE_GNG_BALLAS4', 'VOICE_GNG_BALLAS5'],
+      ['VOICE_GNG_FAM1', 'VOICE_GNG_FAM2', 'VOICE_GNG_FAM3', 'VOICE_GNG_FAM4', 'VOICE_GNG_FAM5'],
+      ['VOICE_GNG_LSV1', 'VOICE_GNG_LSV2', 'VOICE_GNG_LSV3', 'VOICE_GNG_LSV4', 'VOICE_GNG_LSV5'],
+      ['VOICE_GNG_VLA1', 'VOICE_GNG_VLA2', 'VOICE_GNG_VLA3', 'VOICE_GNG_VLA4', 'VOICE_GNG_VLA5'],
+      ['VOICE_GNG_STRI1', 'VOICE_GNG_STRI5'],
+      ['VOICE_GNG_DNB1', 'VOICE_GNG_DNB2', 'VOICE_GNG_DNB3', 'VOICE_GNG_DNB5'],
+      ['VOICE_GNG_VMAFF1', 'VOICE_GNG_VMAFF2', 'VOICE_GNG_VMAFF3', 'VOICE_GNG_VMAFF4', 'VOICE_GNG_VMAFF5'],
+      ['VOICE_GNG_SFR1', 'VOICE_GNG_SFR2', 'VOICE_GNG_SFR3', 'VOICE_GNG_SFR4', 'VOICE_GNG_SFR5']
+    ];
+
+    const EMG_COP_VOICES = [
+      'VOICE_EMG_LAPD1', 'VOICE_EMG_LAPD8', 'VOICE_EMG_SFPD1', 'VOICE_EMG_SFPD5',
+      'VOICE_EMG_LVPD1', 'VOICE_EMG_LVPD5', 'VOICE_EMG_RCOP1', 'VOICE_EMG_RCOP4',
+      'VOICE_EMG_MCOP1', 'VOICE_EMG_MCOP6', 'VOICE_EMG_SWAT1', 'VOICE_EMG_SWAT6',
+      'VOICE_EMG_FBI2', 'VOICE_EMG_FBI6', 'VOICE_EMG_ARMY1', 'VOICE_EMG_ARMY3'
+    ];
+
+    const EMG_MEDIC_VOICES = ['VOICE_EMG_EMT1', 'VOICE_EMG_EMT5'];
+
+    const ALL_VOICE_OPTIONS = [
+      ...SPC_GA_VOICES,
+      ...GANG_VOICE_GROUPS.flat().map(v => ({ v, label: `Gang - ${v.replace('VOICE_GNG_', '')}` })),
+      ...EMG_COP_VOICES.map(v => ({ v, label: `EMG - ${v.replace('VOICE_EMG_', '')}` })),
+      ...EMG_MEDIC_VOICES.map(v => ({ v, label: `EMG - ${v.replace('VOICE_EMG_', '')}` }))
+    ];
+
+    const ACTIVE_SPC_GA_VOICES = SPC_GA_VOICES.filter(v => !/unused/i.test(v.label));
+    const ACTIVE_ALL_VOICES = ALL_VOICE_OPTIONS.filter(v => !/unused/i.test(v.label));
+
+    function isFemaleVoice(v) {
+      return /^VOICE_GEN_([A-Z]{1,3}F[YO]|WFOPJ)|^VOICE_GFD_(BARBARA|HELENA|MICHELLE|KATIE|MILLIE|DENISE|WFY)/i.test(String(v || ''));
+    }
+
+    const DEFAULT_PED_GROUPS = [
+      'NONE',
+      'POPCYCLE_GROUP_WORKERS', 'POPCYCLE_GROUP_BUSINESS', 'POPCYCLE_GROUP_CLUBBERS',
+      'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_BEACHFOLK', 'POPCYCLE_GROUP_PARKFOLK',
+      'POPCYCLE_GROUP_CASUAL_RICH', 'POPCYCLE_GROUP_CASUAL_AVERAGE', 'POPCYCLE_GROUP_CASUAL_POOR',
+      'POPCYCLE_GROUP_PROSTITUTES', 'POPCYCLE_GROUP_CRIMINALS', 'POPCYCLE_GROUP_GOLFERS',
+      'POPCYCLE_GROUP_SERVANTS', 'POPCYCLE_GROUP_AIRPORT', 'POPCYCLE_GROUP_SHOPPERS',
+      'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_DESERTFOLK', 'POPCYCLE_GROUP_AIRCREW',
+      'GANG1', 'GANG2', 'GANG3', 'GANG4', 'GANG5', 'GANG6', 'GANG7', 'GANG8', 'GANG9', 'GANG10',
+      'DEALERS', 'MEDIC', 'FIREMAN', 'COPS', 'SPECIAL'
+    ];
+
+    const VANILLA_PED_NAMES = new Set([
+      'male01','bfori','bfost','vbfycrp','bfyri','bfyst','bmost','bmotr1','bmyri','bmyst','wmomib','bmypol1','bmypol2',
+      'vbmyelvis','bmybe','bmydj','bmycr','bmybu','bmydrug','bmyap','bmybar','bmyboun','bmybox','bmycg','bmycon',
+      'bmyelvis','bmymoun','bmyou','bmysg','bmytatt','bmyva','bmypimp','cwfny','cwfofr','cwfohb','cwfyfr1','cwfyfr2',
+      'cwfyhb1','cwmofr1','cwmohb1','cwmohb2','cwmyfr','cwmyhb1','cwmyhb2','dnfolc1','dnfolc2','dnmylc','dwfolc',
+      'dwfylc1','dwfylc2','dwmolc1','dwmolc2','dwmylc1','dwmylc2','hfori','hfost','hfybe','hfypro','hfyri','hfyst',
+      'hmogar','hmori','hmost','hmybe','hmycm','hmycr','hmydrug','hmyri','hmyst','ofori','ofost','ofyri','ofyst',
+      'omoboat','omokung','omori','omost','omyboun','omybu','omydrug','omykara','omylc','omyri','omyst','sbfori',
+      'sbfost','sbfypro','sbfyri','sbfyst','sbmori','sbmost','sbmycr','sbmyri','sbmyst','sbmytatt','sfypro','shfypro',
+      'shmycr','smyst','smyst2','sofori','sofybu','sofyri','sofyst','somobu','somori','somost','somyap','somybu',
+      'somyri','somyst','swfopro','swfori','swfost','swfyri','swfyst','swmocd','swmori','swmotr1','swmotr2','swmotr3',
+      'swmotr4','swmotr5','swmycr','swmyhp1','swmyhp2','swmyst','vbfypro','vbmycr','vhfypro','vhmycr','vhmyelv',
+      'vimyelv','vwfypro','vwfywa1','vwfywa2','vwmotr1','vwmotr2','vwmyap','vwmybjd','vwmycd','vwmycr','wfori',
+      'wfost','wfybe','wfybu','wfyburg','wfycrk','wfyjg','wfylg','wfypro','wfyri','wfyro','wfyst','wfystew',
+      'wmobe','wmobu','wmocu','wmoice','wmomib','wmopj','wmoprea','wmori','wmosci','wmost','wmotr1','wmybe',
+      'wmybell','wmybmx','wmyboun','wmybp','wmybu','wmycd1','wmycd2','wmych','wmyclot','wmycon','wmyconb','wmycr',
+      'wmydrug','wmygar','wmygol1','wmygol2','wmyjg','wmykara','wmylg','wmymech','wmymoun','wmyplt','wmyri',
+      'wmyro','wmysgrd','wmyskate','wmyst','wmyva','wmyva2','ballas1','ballas2','ballas3','fam1','fam2','fam3',
+      'lsv1','lsv2','lsv3','vla1','vla2','vla3','triada','triadb','triboss','danang1','danang2','danang3',
+      'sfr1','sfr2','sfr3','vmaff1','vmaff2','vmaff3','vmaff4','biker1','biker2','bikdrug','lapd1','sfpd1','lvpd1',
+      'csher','dsher','lapdm1','swat','fbi','army','laemt1','sfemt1','lvemt1','lafd1','sffd1','lvfd1','truth',
+      'maccer','tenpen','pulaski','hern','dwmycr','sweet','ryder','ryder2','ryder3','smoke','smokev','ogloc',
+      'cesar','kendl','wuzimu','cat','claude','zero','tbone','jizzy','maddogg','torino','sindaco','forelli',
+      'paul','robbie','ken','heckler','janitor','bbthin','bb','suzie','mecgrl1','mecgrl2','mecgrl3','gungrl1',
+      'gungrl2','gungrl3','copgrl1','copgrl2','copgrl3','nurgrl1','nurgrl2','nurgrl3','crogrl1','crogrl2','crogrl3'
+    ]);
+
+    // =========================================================================
+    // 2. APPLICATION STATE & VIRTUAL FILE ABSTRACTION
+    // =========================================================================
+    const state = {
+      rows: [],
+      pedGroupsMaster: [...DEFAULT_PED_GROUPS],
+      rawPedGrpExtras: new Map(),
+      lastCheckedIndex: null,
+      activeViewer: null,
+      vanillaPedGrpText: '',
+      randomBlacklist: {
+        pedtype: new Set(),
+        stat: new Set(),
+        animGroup: new Set(),
+        carsMask: new Set(['0FFF', '000F', '0100', '0800', '0020', '0040', '0600', '0000']),
+        flags: new Set(),
+        animFile: new Set(),
+        radio: new Set(),
+        audioType: new Set(),
+        voice: new Set(),
+        pedGroup: new Set(['NONE'])
+      }
+    };
+
+    const nextFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+
+    function showLoading(title, sub = 'Please wait...', pct = 0) {
+      document.getElementById('loadingTitle').textContent = title;
+      document.getElementById('loadingSub').textContent = sub;
+      document.getElementById('loadingProgressBar').style.width = `${Math.min(100, Math.max(0, pct))}%`;
+      document.getElementById('loadingOverlay').classList.add('open');
+    }
+
+    function updateLoading(sub, pct) {
+      if (sub !== null) document.getElementById('loadingSub').textContent = sub;
+      if (pct !== null) document.getElementById('loadingProgressBar').style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('open');
+    }
+
+    function toggleAllGroup(prefix, checked) {
+      document.querySelectorAll(`input[id^="${prefix}"]`).forEach(el => { el.checked = checked; });
+    }
+
+    let uidCounter = 1;
+    const nextUid = () => `ped_${uidCounter++}`;
+
+    function randomPick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // Wrap either a FileSystemFileHandle (HTTPS) or a DOM File (file:// webkitdirectory)
+    function wrapNativeFile(fileObj) {
+      return {
+        name: fileObj.name,
+        getFile: async () => fileObj
+      };
+    }
+
+    function createDefaultPed(overrides = {}) {
+      return {
+        uid: nextUid(),
+        id: 14000,
+        modelName: '14000',
+        txdName: '14000',
+        pedtype: 'CIVMALE',
+        stat: 'STAT_STREET_GUY',
+        animGroup: 'man',
+        carsMask: '120C',
+        flags: '0',
+        animFile: 'man',
+        radio1: '1',
+        radio2: '4',
+        audioType: 'PED_TYPE_GEN',
+        voice1: 'VOICE_GEN_MALE01',
+        voice2: 'VOICE_GEN_MALE01',
+        pedGroups: ['POPCYCLE_GROUP_CASUAL_AVERAGE'],
+        dffHandle: null,
+        txdHandle: null,
+        sourceTag: 'Manual',
+        selected: false,
+        ...overrides
+      };
+    }
+
+    // =========================================================================
+    // 3. TOAST & MODAL HELPERS
+    // =========================================================================
+    function toast(msg, type = 'info') {
+      const box = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      box.appendChild(el);
+      setTimeout(() => el.remove(), 4200);
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    });
+
+    // =========================================================================
+    // 4. IDE & PEDGRP PARSERS
+    // =========================================================================
+    function parseIdeText(text, sourceTag) {
+      const parsed = [];
+      const lines = text.split(/\r?\n/);
+      let inPeds = false;
+      for (const rawLine of lines) {
+        const clean = rawLine.split('#')[0].trim();
+        if (!clean) continue;
+        const lower = clean.toLowerCase();
+        if (lower === 'peds') { inPeds = true; continue; }
+        if (lower === 'end') { inPeds = false; continue; }
+        if (!inPeds && !/^\d+\s*,/.test(clean)) continue;
+
+        const rawTokens = clean.split(',').map(t => t.trim()).filter(Boolean);
+        const tokens = [];
+        for (const tok of rawTokens) {
+          if (/\s+/.test(tok)) {
+            tokens.push(...tok.split(/\s+/));
+          } else {
+            tokens.push(tok);
+          }
+        }
+        if (tokens.length < 4 || isNaN(Number(tokens[0]))) continue;
+
+        parsed.push(createDefaultPed({
+          id: parseInt(tokens[0], 10),
+          modelName: tokens[1] || 'unknown',
+          txdName: tokens[2] || tokens[1] || 'unknown',
+          pedtype: tokens[3] || 'CIVMALE',
+          stat: tokens[4] || 'STAT_STREET_GUY',
+          animGroup: tokens[5] || 'man',
+          carsMask: (tokens[6] || '120C').toUpperCase(),
+          flags: tokens[7] || '0',
+          animFile: tokens[8] || 'man',
+          radio1: tokens[9] || '1',
+          radio2: tokens[10] || '4',
+          audioType: tokens[11] || 'PED_TYPE_GEN',
+          voice1: tokens[12] || 'VOICE_GEN_MALE01',
+          voice2: tokens[13] || tokens[12] || 'VOICE_GEN_MALE01',
+          pedGroups: [],
+          sourceTag
+        }));
+      }
+      return parsed;
+    }
+
+    function parsePedGrpText(text, modelToGroupsMap, extraNamesByGroup) {
+      const lines = text.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const hashIdx = trimmed.indexOf('#');
+        const dataPart = hashIdx >= 0 ? trimmed.slice(0, hashIdx).trim() : trimmed;
+        const groupName = hashIdx >= 0 ? trimmed.slice(hashIdx + 1).trim() : 'POPCYCLE_GROUP_CASUAL_AVERAGE';
+        if (!groupName) continue;
+
+        if (!state.pedGroupsMaster.includes(groupName)) {
+          state.pedGroupsMaster.push(groupName);
+        }
+
+        const names = dataPart.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+        for (const name of names) {
+          const low = name.toLowerCase();
+          if (!modelToGroupsMap.has(low)) {
+            modelToGroupsMap.set(low, []);
+          }
+          const arr = modelToGroupsMap.get(low);
+          if (!arr.includes(groupName)) arr.push(groupName);
+
+          if (!extraNamesByGroup.has(groupName)) {
+            extraNamesByGroup.set(groupName, new Set());
+          }
+          extraNamesByGroup.get(groupName).add(name);
+        }
+      }
+    }
+
+    // =========================================================================
+    // 5. UNIFIED DIRECTORY TREE PROCESSOR (WORKS FOR BOTH file:// AND https://)
+    // =========================================================================
+    function buildPairMapFromHandles(handles) {
+      const map = new Map();
+      for (const h of handles) {
+        const lower = h.name.toLowerCase();
+        if (lower.endsWith('.dff')) {
+          const base = h.name.slice(0, -4);
+          const key = base.toLowerCase();
+          const cur = map.get(key) || { dffHandle: null, txdHandle: null, origName: base };
+          cur.dffHandle = h;
+          cur.origName = base;
+          map.set(key, cur);
+        } else if (lower.endsWith('.txd')) {
+          const base = h.name.slice(0, -4);
+          const key = base.toLowerCase();
+          const cur = map.get(key) || { dffHandle: null, txdHandle: null, origName: base };
+          cur.txdHandle = h;
+          if (!cur.origName) cur.origName = base;
+          map.set(key, cur);
+        }
+      }
+      return map;
+    }
+
+    async function processVirtualDirectoryTree(tree) {
+      document.getElementById('folderLabel').textContent = `Active Directory: /${tree.rootName}`;
+
+      const baseModelMap = buildPairMapFromHandles(tree.gta3RootFiles);
+      const subModelMaps = new Map();
+      for (const [numKey, handles] of tree.gta3NumericFolders.entries()) {
+        subModelMaps.set(numKey, buildPairMapFromHandles(handles));
+      }
+
+      const newRows = [];
+      const modelToGroupMap = new Map();
+      const extraNamesByGroup = new Map();
+
+      const processDataBucket = async (fileHandles, tag, subMap) => {
+        for (const fh of fileHandles) {
+          if (fh.name.toLowerCase() === 'pedgrp.dat') {
+            const txt = await (await fh.getFile()).text();
+            parsePedGrpText(txt, modelToGroupMap, extraNamesByGroup);
+          }
+        }
+        for (const fh of fileHandles) {
+          if (fh.name.toLowerCase().endsWith('.ide')) {
+            const txt = await (await fh.getFile()).text();
+            const ideRows = parseIdeText(txt, tag);
+            for (const r of ideRows) {
+              const key = r.modelName.toLowerCase();
+              const txdKey = r.txdName.toLowerCase();
+              const pair = (subMap && subMap.get(key)) || baseModelMap.get(key);
+              const txdPair = (subMap && subMap.get(txdKey)) || baseModelMap.get(txdKey);
+              if (pair?.dffHandle) r.dffHandle = pair.dffHandle;
+              if (txdPair?.txdHandle) r.txdHandle = txdPair.txdHandle;
+              else if (pair?.txdHandle) r.txdHandle = pair.txdHandle;
+              newRows.push(r);
+            }
+          }
+        }
+      };
+
+      if (tree.dataRootFiles.length > 0) {
+        await processDataBucket(tree.dataRootFiles, 'data/', null);
+      }
+
+      const sortedNumKeys = [...tree.dataNumericFolders.keys()].sort((a, b) => Number(a) - Number(b));
+      for (const numKey of sortedNumKeys) {
+        await processDataBucket(tree.dataNumericFolders.get(numKey), `data/${numKey}`, subModelMaps.get(numKey));
+      }
+
+      for (const r of newRows) {
+        const grps = modelToGroupMap.get(r.modelName.toLowerCase());
+        if (grps && grps.length > 0) r.pedGroups = [...grps];
+      }
+
+      const addonNameSet = new Set(newRows.map(r => r.modelName.toLowerCase()));
+      state.rawPedGrpExtras.clear();
+      for (const [grp, nameSet] of extraNamesByGroup.entries()) {
+        const leftovers = new Set([...nameSet].filter(n => !addonNameSet.has(n.toLowerCase())));
+        if (leftovers.size > 0) state.rawPedGrpExtras.set(grp, leftovers);
+      }
+
+      let maxId = 13999;
+      for (const r of newRows) {
+        if (r.id > maxId) maxId = r.id;
+      }
+
+      // Process optional Add/ folder -> numeric ID & numeric name (anti-replace)
+      let addedFromAdd = 0;
+      const addPairs = buildPairMapFromHandles(tree.addFiles);
+      for (const key of [...addPairs.keys()].sort()) {
+        const pair = addPairs.get(key);
+        if (!pair.dffHandle && !pair.txdHandle) continue;
+        maxId++;
+        const numStr = String(maxId);
+        newRows.push(createDefaultPed({
+          id: maxId,
+          modelName: numStr,
+          txdName: numStr,
+          dffHandle: pair.dffHandle,
+          txdHandle: pair.txdHandle,
+          sourceTag: `Add/${pair.origName}`
+        }));
+        addedFromAdd++;
+      }
+
+      // If data/ and Add/ were empty, load loose files from models/gta3/ as numeric add-ons
+      if (newRows.length === 0 && baseModelMap.size > 0) {
+        for (const key of [...baseModelMap.keys()].sort()) {
+          const pair = baseModelMap.get(key);
+          maxId++;
+          const numStr = String(maxId);
+          newRows.push(createDefaultPed({
+            id: maxId,
+            modelName: numStr,
+            txdName: numStr,
+            dffHandle: pair.dffHandle,
+            txdHandle: pair.txdHandle,
+            sourceTag: `gta3/${pair.origName}`
+          }));
+        }
+      }
+
+      state.rows = newRows;
+      refreshPedGroupDropdownFilter();
+      renderTable();
+
+      const clashCount = getClashSet().size;
+      toast(
+        `Loaded ${newRows.length} peds` +
+        (addedFromAdd ? ` (${addedFromAdd} from Add/ converted to numeric IDs)` : '') +
+        (clashCount ? ` — Detected ${clashCount} ID/Name clashes!` : ' — Ready to edit!'),
+        clashCount ? 'warning' : 'success'
+      );
+    }
+
+    function createEmptyDirTree(rootName) {
+      return {
+        rootName,
+        dataRootFiles: [],
+        dataNumericFolders: new Map(),
+        gta3RootFiles: [],
+        gta3NumericFolders: new Map(),
+        addFiles: []
+      };
+    }
+
+    function routeFileToDirTree(tree, relParts, handle) {
+      if (relParts.length < 2) return;
+      const top = relParts[0].toLowerCase();
+      if (top === 'data') {
+        if (relParts.length === 2) tree.dataRootFiles.push(handle);
+        else if (relParts.length === 3 && /^\d+$/.test(relParts[1])) {
+          const k = relParts[1];
+          if (!tree.dataNumericFolders.has(k)) tree.dataNumericFolders.set(k, []);
+          tree.dataNumericFolders.get(k).push(handle);
+        }
+      } else if (top === 'models' && relParts[1].toLowerCase() === 'gta3') {
+        if (relParts.length === 3) tree.gta3RootFiles.push(handle);
+        else if (relParts.length === 4 && /^\d+$/.test(relParts[2])) {
+          const k = relParts[2];
+          if (!tree.gta3NumericFolders.has(k)) tree.gta3NumericFolders.set(k, []);
+          tree.gta3NumericFolders.get(k).push(handle);
+        }
+      } else if (top === 'add' && relParts.length === 2) {
+        tree.addFiles.push(handle);
+      }
+    }
+
+    // Method A: Modern File System Access API (HTTPS / GitHub Pages / localhost)
+    async function importViaDirectoryPicker() {
+      const rootHandle = await window.showDirectoryPicker({ mode: 'read' });
+      const tree = createEmptyDirTree(rootHandle.name);
+
+      const walkRelevantDirs = async (dirHandle, prefixParts, maxDepth) => {
+        if (prefixParts.length > maxDepth) return;
+        for await (const e of dirHandle.values()) {
+          const nextParts = [...prefixParts, e.name];
+          if (e.kind === 'file') {
+            routeFileToDirTree(tree, nextParts, e);
+          } else if (e.kind === 'directory') {
+            const top = nextParts[0].toLowerCase();
+            if (
+              (nextParts.length === 1 && (top === 'data' || top === 'models' || top === 'add')) ||
+              (nextParts.length === 2 && top === 'models' && e.name.toLowerCase() === 'gta3') ||
+              (nextParts.length === 2 && top === 'data' && /^\d+$/.test(e.name)) ||
+              (nextParts.length === 3 && top === 'models' && /^\d+$/.test(e.name))
+            ) {
+              await walkRelevantDirs(e, nextParts, 4);
+            }
+          }
+        }
+      };
+
+      await walkRelevantDirs(rootHandle, [], 4);
+      await processVirtualDirectoryTree(tree);
+    }
+
+    // Method B: Fallback <input type="file" webkitdirectory> (Works 100% locally on file://)
+    const fallbackDirInput = document.getElementById('fallbackDirInput');
+    fallbackDirInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+
+      const firstParts = files[0].webkitRelativePath.split('/');
+      const tree = createEmptyDirTree(firstParts[0] || 'Selected_Folder');
+
+      for (const file of files) {
+        const parts = file.webkitRelativePath.split('/');
+        if (parts.length < 3) continue;
+        routeFileToDirTree(tree, parts.slice(1), wrapNativeFile(file));
+      }
+
+      fallbackDirInput.value = '';
+      await processVirtualDirectoryTree(tree);
+    });
+
+    async function triggerImportFolder() {
+      if (window.isSecureContext && typeof window.showDirectoryPicker === 'function') {
+        try {
+          await importViaDirectoryPicker();
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+          console.warn('showDirectoryPicker fallback to webkitdirectory:', err);
+        }
+      }
+      fallbackDirInput.click();
+    }
+
+    // =========================================================================
+    // 6. COLLISION CHECKER, SANITIZER, AUTO-RENAME & SHIFT-UP DELETE
+    // =========================================================================
+    function sanitizeGtaAssetName(rawName, fallback = '14000') {
+      const cleaned = String(rawName ?? '')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 24);
+      return cleaned || String(fallback).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '14000';
+    }
+
+    function getClashSet() {
+      const idCounts = new Map();
+      const nameCounts = new Map();
+      const txdCounts = new Map();
+      for (const r of state.rows) {
+        idCounts.set(r.id, (idCounts.get(r.id) || 0) + 1);
+        const low = r.modelName.trim().toLowerCase();
+        const txdLow = r.txdName.trim().toLowerCase();
+        nameCounts.set(low, (nameCounts.get(low) || 0) + 1);
+        txdCounts.set(txdLow, (txdCounts.get(txdLow) || 0) + 1);
+      }
+      const clashedUids = new Set();
+      for (const r of state.rows) {
+        const low = r.modelName.trim().toLowerCase();
+        const txdLow = r.txdName.trim().toLowerCase();
+        if (
+          idCounts.get(r.id) > 1 ||
+          r.id < 313 ||
+          !low ||
+          nameCounts.get(low) > 1 ||
+          VANILLA_PED_NAMES.has(low) ||
+          !txdLow ||
+          txdCounts.get(txdLow) > 1 ||
+          VANILLA_PED_NAMES.has(txdLow)
+        ) {
+          clashedUids.add(r.uid);
+        }
+      }
+      return clashedUids;
+    }
+
+    function fixClashesOnly() {
+      if (state.rows.length === 0) return;
+      const usedIds = new Set();
+      const usedNames = new Set(VANILLA_PED_NAMES);
+      const usedTxdNames = new Set(VANILLA_PED_NAMES);
+
+      let highestId = 13999;
+      for (const r of state.rows) {
+        if (r.id >= 14000 && r.id > highestId) highestId = r.id;
+      }
+
+      let fixedCount = 0;
+      for (const r of state.rows) {
+        let needsFix = false;
+        if (r.id < 313 || usedIds.has(r.id)) {
+          highestId++;
+          r.id = highestId;
+          needsFix = true;
+        }
+        usedIds.add(r.id);
+
+        const sanModel = sanitizeGtaAssetName(r.modelName, String(r.id));
+        if (sanModel !== r.modelName) {
+          r.modelName = sanModel;
+          needsFix = true;
+        }
+        const low = r.modelName.toLowerCase();
+        if (!low || usedNames.has(low)) {
+          const newName = String(r.id);
+          r.modelName = newName;
+          r.txdName = newName;
+          needsFix = true;
+        }
+        usedNames.add(r.modelName.toLowerCase());
+
+        const sanTxd = sanitizeGtaAssetName(r.txdName, r.modelName);
+        if (sanTxd !== r.txdName) {
+          r.txdName = sanTxd;
+          needsFix = true;
+        }
+        const txdLow = r.txdName.toLowerCase();
+        if (!txdLow || usedTxdNames.has(txdLow)) {
+          r.txdName = !usedTxdNames.has(r.modelName.toLowerCase()) ? r.modelName : String(r.id);
+          needsFix = true;
+        }
+        usedTxdNames.add(r.txdName.toLowerCase());
+
+        if (needsFix) fixedCount++;
+      }
+
+      renderTable();
+      toast(fixedCount > 0 ? `Automatically fixed ${fixedCount} ID / ModelName / TxdName clashes!` : 'No ID, ModelName, or TxdName clashes found.', 'success');
+    }
+
+    function applyAutoRename(startId, mode) {
+      let curId = Number(startId) || 14000;
+      const usedNames = new Set(VANILLA_PED_NAMES);
+
+      for (const r of state.rows) {
+        r.id = curId;
+        if (mode === 'numeric') {
+          r.modelName = String(curId);
+          r.txdName = String(curId);
+        } else if (mode === 'prefix') {
+          r.modelName = `ped${curId}`;
+          r.txdName = `ped${curId}`;
+        } else if (mode === 'id_only') {
+          const low = r.modelName.trim().toLowerCase();
+          if (!low || usedNames.has(low)) {
+            r.modelName = String(curId);
+            r.txdName = String(curId);
+          }
+        }
+        usedNames.add(r.modelName.trim().toLowerCase());
+        curId++;
+      }
+
+      renderTable();
+      toast(`Auto-rename completed for ${state.rows.length} peds (starting at ID ${startId}).`, 'success');
+    }
+
+    function deleteRowWithShiftUp(uid) {
+      const idx = state.rows.findIndex(r => r.uid === uid);
+      if (idx === -1) return;
+
+      const deletedId = state.rows[idx].id;
+      state.rows.splice(idx, 1);
+
+      for (let i = idx; i < state.rows.length; i++) {
+        const row = state.rows[i];
+        const prevIdStr = String(row.id);
+        const newId = deletedId + (i - idx);
+        row.id = newId;
+        if (row.modelName === prevIdStr) row.modelName = String(newId);
+        if (row.txdName === prevIdStr) row.txdName = String(newId);
+      }
+
+      renderTable();
+      toast('Row deleted & subsequent IDs shifted up automatically.', 'info');
+    }
+
+    // =========================================================================
+    // 7. SPREADSHEET RENDERING & SELECTION UX
+    // =========================================================================
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function createSelectTemplateCache(options, isObj = false) {
+      const exactByLower = new Map();
+      let optionsHtml = '';
+      for (const item of options) {
+        const val = String(isObj ? item.v : item);
+        const lbl = String(isObj ? item.label : item);
+        exactByLower.set(val.toLowerCase(), val);
+        optionsHtml += `<option value="${escapeHtml(val)}">${escapeHtml(lbl)}</option>`;
+      }
+      return { optionsHtml, exactByLower };
+    }
+
+    const CACHED_SELECT_TEMPLATES = {
+      pedtype: createSelectTemplateCache(PED_TYPES, false),
+      stat: createSelectTemplateCache(PED_STATS, false),
+      animGroup: createSelectTemplateCache(ANIM_GROUPS, false),
+      carsMask: createSelectTemplateCache(CAR_MASK_PRESETS, true),
+      flags: createSelectTemplateCache([{ v: '0', label: '0' }, { v: '1', label: '1 (Drugs)' }], true),
+      animFile: createSelectTemplateCache(ANIM_FILES, false),
+      radio: createSelectTemplateCache(RADIO_STATIONS, true),
+      audioType: createSelectTemplateCache(AUDIO_TYPES, false),
+      voice: createSelectTemplateCache(ALL_VOICE_OPTIONS, true)
+    };
+
+    function buildSelectHtml(cacheKey, currentVal, field, extraClass = '') {
+      const cache = CACHED_SELECT_TEMPLATES[cacheKey];
+      const rawStr = String(currentVal ?? '');
+      const exactVal = cache.exactByLower.get(rawStr.toLowerCase());
+      let optsHtml;
+
+      if (exactVal !== undefined) {
+        const needle = `value="${escapeHtml(exactVal)}"`;
+        optsHtml = cache.optionsHtml.replace(needle, `${needle} selected`);
+      } else if (rawStr !== '') {
+        optsHtml = `<option value="${escapeHtml(rawStr)}" selected>${escapeHtml(rawStr)} (Imported)</option>${cache.optionsHtml}`;
+      } else {
+        optsHtml = cache.optionsHtml;
+      }
+
+      return `<select class="cell-select ${extraClass}" data-field="${field}">${optsHtml}</select>`;
+    }
+
+    function refreshPedGroupDropdownFilter() {
+      const sel = document.getElementById('filterGroup');
+      const cur = sel.value;
+      sel.innerHTML = `<option value="">All Ped Groups</option>` +
+        state.pedGroupsMaster.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+      sel.value = cur;
+    }
+
+    function getFilteredRows() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const grp = document.getElementById('filterGroup').value;
+      const fStat = document.getElementById('filterFileStatus').value;
+
+      return state.rows.filter(r => {
+        if (grp) {
+          if (grp === 'NONE' && r.pedGroups.length > 0) return false;
+          if (grp !== 'NONE' && !r.pedGroups.includes(grp)) return false;
+        }
+        const hasBoth = Boolean(r.dffHandle && r.txdHandle);
+        const hasAny = Boolean(r.dffHandle || r.txdHandle);
+        if (fStat === 'both' && !hasBoth) return false;
+        if (fStat === 'partial' && (hasBoth || !hasAny)) return false;
+        if (fStat === 'none' && hasAny) return false;
+        if (q) {
+          const hay = `${r.id} ${r.modelName} ${r.txdName} ${r.pedtype} ${r.stat} ${r.animGroup} ${r.carsMask} ${r.voice1} ${r.voice2} ${r.pedGroups.join(' ')} ${r.sourceTag}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function updateSelectionCountUI() {
+      let selectedCount = 0;
+      for (const r of state.rows) {
+        if (r.selected) selectedCount++;
+      }
+      document.getElementById('selCountLabel').textContent = selectedCount;
+      document.getElementById('randCountLabel').textContent = selectedCount;
+      document.getElementById('btnCopyFromPed').disabled = selectedCount === 0;
+      document.getElementById('btnRandomizeSelected').disabled = selectedCount === 0;
+    }
+
+    function recalculateClashesUI() {
+      const clashSet = getClashSet();
+      const clashes = clashSet.size;
+      document.getElementById('statClashes').textContent = clashes;
+      const clashPill = document.getElementById('statClashPill');
+      clashPill.className = clashes > 0 ? 'pill clash' : 'pill ok';
+      document.querySelectorAll('#pedTbody tr').forEach(el => {
+        el.classList.toggle('row-clash', clashSet.has(el.dataset.uid));
+      });
+      return clashSet;
+    }
+
+    function updateStatsBar(precomputedClashSet = null) {
+      const total = state.rows.length;
+      let paired = 0;
+      for (const r of state.rows) {
+        if (r.dffHandle && r.txdHandle) paired++;
+      }
+      const clashes = precomputedClashSet ? precomputedClashSet.size : getClashSet().size;
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statPaired').textContent = paired;
+      document.getElementById('statClashes').textContent = clashes;
+      updateSelectionCountUI();
+
+      const clashPill = document.getElementById('statClashPill');
+      clashPill.className = clashes > 0 ? 'pill clash' : 'pill ok';
+
+      document.getElementById('emptyState').style.display = total === 0 ? 'flex' : 'none';
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('pedTbody');
+      const filtered = getFilteredRows();
+      const clashSet = getClashSet();
+
+      const htmlParts = filtered.map((r, visIdx) => {
+        const isClash = clashSet.has(r.uid);
+        const modelWarn = r.modelName.length > 20;
+        const txdWarn = r.txdName.length > 20;
+        const fileStatus = (r.dffHandle && r.txdHandle)
+          ? `<span class="file-badge both">DFF+TXD</span>`
+          : (r.dffHandle || r.txdHandle)
+            ? `<span class="file-badge partial">${r.dffHandle ? 'DFF Only' : 'TXD Only'}</span>`
+            : `<span class="file-badge none">No Mesh</span>`;
+
+        return `
+          <tr data-uid="${r.uid}" data-vis-idx="${visIdx}" class="${r.selected ? 'selected' : ''} ${isClash ? 'row-clash' : ''}">
+            <td class="cell-chk sticky-col-0">
+              <input type="checkbox" class="row-chk" ${r.selected ? 'checked' : ''} />
+            </td>
+            <td class="sticky-col-1 id-cell">
+              <input type="number" class="cell-input mono" data-field="id" value="${r.id}" />
+            </td>
+            <td class="sticky-col-2 name-cell ${modelWarn ? 'name-len-warn' : ''}" title="${modelWarn ? 'Warning: >20 chars (GTA SA max 24 chars)' : ''}">
+              <div class="ped-name-wrap">
+                <input type="text" class="cell-input mono" data-field="modelName" maxlength="24" value="${escapeHtml(r.modelName)}" />
+                <div class="row-actions-inline">
+                  <button type="button" class="icon-btn btn-view-ped" title="View 3D Model (${escapeHtml(r.modelName)})" ${!r.dffHandle ? 'disabled' : ''}>👁️</button>
+                  <button type="button" class="icon-btn del btn-del-ped" title="Clear This Row & Shift Up">✕</button>
+                </div>
+              </div>
+            </td>
+            <td class="txd-cell ${txdWarn ? 'name-len-warn' : ''}" title="${txdWarn ? 'Warning: >20 chars (GTA SA max 24 chars)' : ''}">
+              <input type="text" class="cell-input mono" data-field="txdName" maxlength="24" value="${escapeHtml(r.txdName)}" />
+            </td>
+            <td>${buildSelectHtml('pedtype', r.pedtype, 'pedtype')}</td>
+            <td>${buildSelectHtml('stat', r.stat, 'stat')}</td>
+            <td>${buildSelectHtml('animGroup', r.animGroup, 'animGroup')}</td>
+            <td>${buildSelectHtml('carsMask', r.carsMask, 'carsMask', 'mono')}</td>
+            <td>${buildSelectHtml('flags', r.flags, 'flags')}</td>
+            <td>${buildSelectHtml('animFile', r.animFile, 'animFile')}</td>
+            <td>${buildSelectHtml('radio', r.radio1, 'radio1')}</td>
+            <td>${buildSelectHtml('radio', r.radio2, 'radio2')}</td>
+            <td>${buildSelectHtml('audioType', r.audioType, 'audioType')}</td>
+            <td>${buildSelectHtml('voice', r.voice1, 'voice1', 'mono')}</td>
+            <td>${buildSelectHtml('voice', r.voice2, 'voice2', 'mono')}</td>
+            <td>${buildMultiGroupCellHtml(r)}</td>
+            <td>${fileStatus}</td>
+            <td><span class="source-tag">${escapeHtml(r.sourceTag)}</span></td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = htmlParts.join('');
+      updateStatsBar(clashSet);
+    }
+
+    function formatPedGroupsSummary(groups) {
+      if (!groups || groups.length === 0) return 'NONE';
+      const shortNames = groups.map(g => g.replace(/^POPCYCLE_GROUP_/, ''));
+      return shortNames.join(', ');
+    }
+
+    function buildMultiGroupCellHtml(row) {
+      const grps = row.pedGroups || [];
+      const label = formatPedGroupsSummary(grps);
+      const badge = grps.length > 0 ? `<span class="multi-grp-count">${grps.length}</span>` : '';
+      return `
+        <button type="button" class="multi-grp-trigger" title="${escapeHtml(grps.join(', ') || 'NONE')}">
+          <span class="multi-grp-label" style="${grps.length === 0 ? 'color:var(--text-muted);' : ''}">${escapeHtml(label)}</span>
+          ${badge}
+          <span style="font-size:9px; color:var(--text-muted);">▼</span>
+        </button>
+      `;
+    }
+
+    let activePopoverUid = null;
+    const pedGroupPopover = document.getElementById('pedGroupPopover');
+    const pedGroupPopoverList = document.getElementById('pedGroupPopoverList');
+
+    function openPedGroupPopover(row, triggerBtn) {
+      activePopoverUid = row.uid;
+      document.getElementById('pedGroupPopoverTitle').textContent = `[${row.modelName}] Ped Groups`;
+
+      const availableGroups = state.pedGroupsMaster.filter(g => g !== 'NONE');
+      const selectedSet = new Set(row.pedGroups || []);
+
+      pedGroupPopoverList.innerHTML = availableGroups.map(g => `
+        <label class="multi-grp-opt">
+          <input type="checkbox" value="${escapeHtml(g)}" ${selectedSet.has(g) ? 'checked' : ''} />
+          <span>${escapeHtml(g)}</span>
+        </label>
+      `).join('');
+
+      const rect = triggerBtn.getBoundingClientRect();
+      pedGroupPopover.classList.add('open');
+
+      const popH = pedGroupPopover.offsetHeight || 280;
+      const popW = pedGroupPopover.offsetWidth || 285;
+      const top = (rect.bottom + popH > window.innerHeight - 10)
+        ? Math.max(8, rect.top - popH - 4)
+        : rect.bottom + 3;
+      const left = Math.min(window.innerWidth - popW - 10, Math.max(8, rect.left));
+
+      pedGroupPopover.style.top = `${top}px`;
+      pedGroupPopover.style.left = `${left}px`;
+    }
+
+    function closePedGroupPopover() {
+      pedGroupPopover.classList.remove('open');
+      activePopoverUid = null;
+    }
+
+    pedGroupPopoverList.addEventListener('change', (e) => {
+      if (e.target.type !== 'checkbox' || !activePopoverUid) return;
+      const row = state.rows.find(r => r.uid === activePopoverUid);
+      if (!row) return;
+
+      const checked = Array.from(pedGroupPopoverList.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(el => el.value);
+      row.pedGroups = checked;
+
+      const tr = pedTbody.querySelector(`tr[data-uid="${row.uid}"]`);
+      const cell = tr?.querySelector('.multi-grp-trigger')?.parentElement;
+      if (cell) cell.innerHTML = buildMultiGroupCellHtml(row);
+    });
+
+    document.getElementById('btnPopoverClearGroups').addEventListener('click', () => {
+      if (!activePopoverUid) return;
+      const row = state.rows.find(r => r.uid === activePopoverUid);
+      if (!row) return;
+      row.pedGroups = [];
+      pedGroupPopoverList.querySelectorAll('input[type="checkbox"]').forEach(el => { el.checked = false; });
+      const tr = pedTbody.querySelector(`tr[data-uid="${row.uid}"]`);
+      const cell = tr?.querySelector('.multi-grp-trigger')?.parentElement;
+      if (cell) cell.innerHTML = buildMultiGroupCellHtml(row);
+    });
+
+    document.getElementById('btnPopoverClose').addEventListener('click', closePedGroupPopover);
+
+    document.addEventListener('mousedown', (e) => {
+      if (!pedGroupPopover.classList.contains('open')) return;
+      if (!pedGroupPopover.contains(e.target) && !e.target.closest('.multi-grp-trigger')) {
+        closePedGroupPopover();
+      }
+    });
+
+    const pedTbody = document.getElementById('pedTbody');
+
+    pedTbody.addEventListener('change', (e) => {
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      const uid = tr.dataset.uid;
+      const row = state.rows.find(r => r.uid === uid);
+      if (!row) return;
+
+      if (e.target.classList.contains('row-chk')) {
+        row.selected = e.target.checked;
+        tr.classList.toggle('selected', row.selected);
+        updateSelectionCountUI();
+        return;
+      }
+
+      const field = e.target.dataset.field;
+      if (field) {
+        if (field === 'id') {
+          row.id = parseInt(e.target.value, 10) || 14000;
+          recalculateClashesUI();
+        } else if (field === 'modelName' || field === 'txdName') {
+          const rawVal = e.target.value.trim();
+          const sanitized = sanitizeGtaAssetName(rawVal, String(row.id));
+          if (rawVal !== sanitized) {
+            toast(`Sanitized "${rawVal}" → "${sanitized}" (GTA SA max 24 alphanumeric/_/- chars).`, 'warning');
+          }
+          row[field] = sanitized;
+          e.target.value = sanitized;
+
+          const cellTd = e.target.closest('td');
+          if (cellTd) cellTd.classList.toggle('name-len-warn', sanitized.length > 20);
+          if (sanitized.length > 20) {
+            toast(`Warning: "${sanitized}" is ${sanitized.length} chars (recommended ≤ 20 chars).`, 'warning');
+          }
+
+          if (field === 'modelName') {
+            const txdInput = tr.querySelector('[data-field="txdName"]');
+            if (txdInput) {
+              row.txdName = sanitized;
+              txdInput.value = sanitized;
+              txdInput.closest('td')?.classList.toggle('name-len-warn', sanitized.length > 20);
+            }
+          }
+          recalculateClashesUI();
+        } else {
+          row[field] = e.target.value.trim();
+        }
+      }
+    });
+
+    pedTbody.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      const uid = tr.dataset.uid;
+      const row = state.rows.find(r => r.uid === uid);
+      if (!row) return;
+
+      if (e.target.classList.contains('row-chk')) {
+        const visIdx = Number(tr.dataset.visIdx);
+        if (e.shiftKey && state.lastCheckedIndex !== null) {
+          const filtered = getFilteredRows();
+          const start = Math.min(state.lastCheckedIndex, visIdx);
+          const end = Math.max(state.lastCheckedIndex, visIdx);
+          const targetVal = e.target.checked;
+          const span = end - start + 1;
+          (async () => {
+            if (span > 40) {
+              showLoading('Selecting Rows...', `Updating ${span} rows`, 40);
+              await nextFrame();
+            }
+            for (let i = start; i <= end; i++) filtered[i].selected = targetVal;
+            renderTable();
+            if (span > 40) hideLoading();
+          })();
+        }
+        state.lastCheckedIndex = visIdx;
+        return;
+      }
+
+      const grpTrigger = e.target.closest('.multi-grp-trigger');
+      if (grpTrigger) {
+        if (activePopoverUid === row.uid && pedGroupPopover.classList.contains('open')) {
+          closePedGroupPopover();
+        } else {
+          openPedGroupPopover(row, grpTrigger);
+        }
+        return;
+      }
+
+      if (e.target.closest('.btn-view-ped')) {
+        openPedViewer(row);
+        return;
+      }
+
+      if (e.target.closest('.btn-del-ped')) {
+        deleteRowWithShiftUp(uid);
+      }
+    });
+
+    document.getElementById('chkSelectAll').addEventListener('change', async (e) => {
+      const filtered = getFilteredRows();
+      const checked = e.target.checked;
+      if (filtered.length > 40) {
+        showLoading(checked ? 'Selecting All Rows...' : 'Deselecting Rows...', `${filtered.length} visible peds`, 45);
+        await nextFrame();
+      }
+      for (const r of filtered) r.selected = checked;
+      renderTable();
+      if (filtered.length > 40) hideLoading();
+    });
+
+    // =========================================================================
+    // 8. BULK "COPY DATA" (13 INDEPENDENT) & "RANDOMIZE" WITH BLACKLIST (x)
+    // =========================================================================
+    const ALL_PARAM_KEYS = [
+      'pedtype', 'stat', 'animGroup', 'carsMask', 'flags',
+      'animFile', 'radio1', 'radio2', 'audioType', 'voice1', 'voice2', 'pedGroup'
+    ];
+
+    function getBlacklistPoolItems(paramKey) {
+      switch (paramKey) {
+        case 'pedtype': return PED_TYPES.map(v => ({ v, label: v }));
+        case 'stat': return PED_STATS.map(v => ({ v, label: v }));
+        case 'animGroup': return ANIM_GROUPS.map(v => ({ v, label: v }));
+        case 'carsMask': return CAR_MASK_PRESETS;
+        case 'flags': return [{ v: '0', label: '0' }, { v: '1', label: '1 (Drugs)' }];
+        case 'animFile': return ANIM_FILES.map(v => ({ v, label: v }));
+        case 'radio': return RADIO_STATIONS;
+        case 'audioType': return AUDIO_TYPES.map(v => ({ v, label: v }));
+        case 'voice': return ACTIVE_ALL_VOICES;
+        case 'pedGroup': return state.pedGroupsMaster.map(v => ({ v, label: v }));
+        default: return [];
+      }
+    }
+
+    function updateBlacklistResetBtn() {
+      let totalBl = 0;
+      for (const s of Object.values(state.randomBlacklist)) totalBl += s.size;
+      document.getElementById('btnClearBlacklist').textContent = `Reset All (${totalBl})`;
+    }
+
+    function renderBlacklistChips() {
+      const paramKey = document.getElementById('blacklistParamSelect').value;
+      const blSet = state.randomBlacklist[paramKey];
+      const items = getBlacklistPoolItems(paramKey);
+      const container = document.getElementById('blacklistChipsContainer');
+
+      container.innerHTML = items.map(item => {
+        const isBl = blSet.has(item.v);
+        return `<span class="bl-chip ${isBl ? 'blacklisted' : ''}" data-val="${escapeHtml(item.v)}">${escapeHtml(item.label)}${isBl ? ' (x)' : ''}</span>`;
+      }).join('');
+      updateBlacklistResetBtn();
+    }
+
+    document.getElementById('blacklistParamSelect').addEventListener('change', renderBlacklistChips);
+
+    document.getElementById('blacklistChipsContainer').addEventListener('click', (e) => {
+      const chip = e.target.closest('.bl-chip');
+      if (!chip) return;
+      const paramKey = document.getElementById('blacklistParamSelect').value;
+      const val = chip.dataset.val;
+      const blSet = state.randomBlacklist[paramKey];
+      if (blSet.has(val)) blSet.delete(val);
+      else blSet.add(val);
+      renderBlacklistChips();
+    });
+
+    document.getElementById('btnClearBlacklist').addEventListener('click', () => {
+      for (const s of Object.values(state.randomBlacklist)) s.clear();
+      renderBlacklistChips();
+      toast('All randomization blacklists cleared.', 'info');
+    });
+
+    document.getElementById('btnCopyFromPed').addEventListener('click', () => {
+      const selected = state.rows.filter(r => r.selected);
+      if (selected.length === 0) return;
+
+      document.getElementById('copyTargetCount').textContent = selected.length;
+      document.getElementById('copySourceInput').value = '';
+      const dl = document.getElementById('pedNamesDatalist');
+      dl.innerHTML = state.rows
+        .map(r => `<option value="${escapeHtml(r.modelName)}">ID ${r.id} (${escapeHtml(r.pedtype)} / ${escapeHtml(r.stat)})</option>`)
+        .join('');
+
+      openModal('modalCopyPed');
+      setTimeout(() => document.getElementById('copySourceInput').focus(), 50);
+    });
+
+    document.getElementById('btnConfirmCopyPed').addEventListener('click', async () => {
+      const query = document.getElementById('copySourceInput').value.trim().toLowerCase();
+      if (!query) {
+        toast('Please enter a reference ped name or ID first.', 'warning');
+        return;
+      }
+
+      const src = state.rows.find(r => r.modelName.toLowerCase() === query || String(r.id) === query);
+      if (!src) {
+        toast(`Reference ped "${query}" was not found in the sheet.`, 'error');
+        return;
+      }
+
+      const enabledKeys = ALL_PARAM_KEYS.filter(k => document.getElementById(`cp-${k}`)?.checked);
+      closeModal('modalCopyPed');
+
+      const targets = state.rows.filter(r => r.selected && r.uid !== src.uid);
+      if (targets.length > 30) {
+        showLoading('Copying Ped Parameters...', `Applying to ${targets.length} peds`, 35);
+        await nextFrame();
+      }
+
+      for (const target of targets) {
+        for (const k of enabledKeys) {
+          if (k === 'pedGroup') target.pedGroups = [...(src.pedGroups || [])];
+          else target[k] = src[k];
+        }
+      }
+
+      if (targets.length > 30) updateLoading('Rendering updated table...', 85);
+      renderTable();
+      hideLoading();
+      toast(`Copied ${enabledKeys.length} parameters from "${src.modelName}" to ${targets.length} selected peds!`, 'success');
+    });
+
+    document.getElementById('btnRandomizeSelected').addEventListener('click', () => {
+      const selected = state.rows.filter(r => r.selected);
+      if (selected.length === 0) return;
+
+      document.getElementById('randTargetCount').textContent = selected.length;
+      renderBlacklistChips();
+      openModal('modalRandomizePed');
+    });
+
+    // -------------------------------------------------------------------------
+    // SMART CONTEXT SYNC CLASSIFIERS & 3-STEP POOL RESOLVER
+    // (1. Build Context Pool -> 2. Filter Blacklist -> 3. Override if Empty)
+    // -------------------------------------------------------------------------
+    const FEMALE_ANIM_GROUPS = new Set(['woman', 'sexywoman', 'busywoman', 'oldwoman', 'oldfatwoman', 'fatwoman', 'pro', 'jogwoman']);
+    const OLD_ANIM_GROUPS = new Set(['oldman', 'oldwoman', 'oldfatwoman']);
+    const RICH_ANIM_GROUPS = new Set(['sexywoman', 'busywoman']);
+
+    const VOICE_POOLS_CLASSIFIED = (() => {
+      const active = ACTIVE_SPC_GA_VOICES.map(x => x.v).filter(v => v !== 'VOICE_GEN_NOVOICE');
+      const femaleAll = active.filter(isFemaleVoice);
+      const maleAll = active.filter(v => !isFemaleVoice(v));
+
+      return {
+        femaleAll,
+        maleAll,
+        femalePro: femaleAll.filter(v => v.includes('PRO')),
+        femaleOld: femaleAll.filter(v => /^VOICE_GEN_[A-Z]{1,3}FO/.test(v)),
+        femaleRich: femaleAll.filter(v => /(RI|BU|CRP|STEW)$/.test(v)),
+        maleOld: maleAll.filter(v => /^VOICE_GEN_[A-Z]{1,3}MO/.test(v)),
+        maleRich: maleAll.filter(v => /(RI|BU|CON|MIB|PLT|GOL)/.test(v)),
+        maleToughCrim: maleAll.filter(v => /(CR|DRUG|BIK|MAFF|BOUN|BOX|MOTR|TR\d|CH|BDYG)/.test(v)),
+        gang: GANG_VOICE_GROUPS,
+        emgCop: EMG_COP_VOICES,
+        emgMedic: EMG_MEDIC_VOICES
+      };
+    })();
+
+    // Step 1 -> Step 2 (Apply Blacklist) -> Step 3 (Context Sync Priority Override if Empty)
+    function resolveContextPool(contextPool, blSet, fallbackPool = null) {
+      const base = (contextPool && contextPool.length > 0) ? contextPool : (fallbackPool || []);
+      const filtered = base.filter(v => !blSet.has(v));
+      if (filtered.length > 0) return filtered;
+      // Priority Override: force-penetrate blacklist so context integrity never breaks
+      return base;
+    }
+
+    function detectPedGender(ped) {
+      if (ped.pedtype === 'CIVFEMALE' || ped.pedtype === 'PROSTITUTE') return 'F';
+      if (FEMALE_ANIM_GROUPS.has(ped.animGroup)) return 'F';
+      if (/_GIRL$|_FEMALE$|STAT_PROSTITUTE/.test(ped.stat)) return 'F';
+      if (isFemaleVoice(ped.voice1) || isFemaleVoice(ped.voice2)) return 'F';
+      const hint = `${ped.modelName} ${ped.sourceTag}`.toLowerCase();
+      if (/^[a-z]{1,3}f[yo][a-z0-9_]*$/.test(hint.split('/').pop())) return 'F';
+      if (/(female|woman|girl|lady|prostitute|hooker|bitch|chick|nun|nurse|maid)/.test(hint)) return 'F';
+      return 'M';
+    }
+
+    function getContextPedtypePool(gender) {
+      if (gender === 'F') return ['CIVFEMALE', 'PROSTITUTE'];
+      return [
+        'CIVMALE', 'CRIMINAL', 'COP', 'MEDIC', 'FIREMAN',
+        'GANG1', 'GANG2', 'GANG3', 'GANG4', 'GANG5', 'GANG6', 'GANG7', 'GANG8', 'GANG9', 'GANG10'
+      ];
+    }
+
+    function getContextStatPool(pedtype, gender) {
+      if (pedtype === 'PROSTITUTE') return ['STAT_PROSTITUTE'];
+      if (pedtype === 'COP') return ['STAT_COP'];
+      if (pedtype === 'MEDIC') return ['STAT_MEDIC'];
+      if (pedtype === 'FIREMAN') return ['STAT_FIREMAN'];
+      if (/^GANG(\d+)$/.test(pedtype)) return [`STAT_${pedtype}`];
+      if (pedtype === 'CRIMINAL') return ['STAT_CRIMINAL'];
+
+      const neutral = ['STAT_COWARD', 'STAT_TOURIST', 'STAT_SHOPPER', 'STAT_SKATER'];
+      if (gender === 'F') {
+        return [
+          'STAT_STREET_GIRL', 'STAT_SUIT_GIRL', 'STAT_OLD_GIRL',
+          'STAT_BEACH_GIRL', 'STAT_TOUGH_GIRL', 'STAT_GEEK_GIRL',
+          ...neutral
+        ];
+      }
+      return [
+        'STAT_STREET_GUY', 'STAT_SUIT_GUY', 'STAT_OLD_GUY', 'STAT_TOUGH_GUY',
+        'STAT_SENSIBLE_GUY', 'STAT_BEACH_GUY', 'STAT_GEEK_GUY',
+        'STAT_TRAMP_MALE', 'STAT_TAXIDRIVER',
+        ...neutral
+      ];
+    }
+
+    function getContextAnimGroupPool(pedtype, stat, gender) {
+      if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE') return ['pro'];
+      if (pedtype === 'COP' || pedtype === 'MEDIC' || pedtype === 'FIREMAN') return ['swat', 'cop', 'medic'];
+      if (/^GANG\d+$/.test(pedtype)) return ['gang1', 'gang2', 'man'];
+      if (stat === 'STAT_SKATER') return ['skate'];
+
+      if (gender === 'F') {
+        if (stat === 'STAT_OLD_GIRL') return ['oldwoman', 'oldfatwoman'];
+        if (stat === 'STAT_SUIT_GIRL') return ['busywoman', 'sexywoman', 'woman'];
+        if (stat === 'STAT_BEACH_GIRL') return ['woman', 'jogwoman'];
+        return ['woman', 'sexywoman', 'busywoman', 'jogwoman'];
+      }
+      if (stat === 'STAT_OLD_GUY') return ['oldman', 'man'];
+      if (stat === 'STAT_TRAMP_MALE') return ['oldman', 'man', 'shuffle'];
+      if (pedtype === 'CRIMINAL' || stat === 'STAT_CRIMINAL') return ['man', 'gang1', 'gang2'];
+      return ['man', 'jogger', 'fatman'];
+    }
+
+    function getContextAnimFilePool(pedtype, stat, animGroup) {
+      if (animGroup === 'skate' || stat === 'STAT_SKATER') return ['skate'];
+      if (stat === 'STAT_BEACH_GUY' || stat === 'STAT_BEACH_GIRL') return ['beach', 'null'];
+      if (pedtype === 'MEDIC' || stat === 'STAT_MEDIC') return ['medic', 'null'];
+      return ['man', 'null'];
+    }
+
+    function getContextFlagsPool(pedtype, stat, animGroup) {
+      if (pedtype === 'COP' || pedtype === 'MEDIC' || pedtype === 'FIREMAN') return ['0'];
+      if (OLD_ANIM_GROUPS.has(animGroup) || stat === 'STAT_OLD_GUY' || stat === 'STAT_OLD_GIRL' || stat === 'STAT_TRAMP_MALE') {
+        return ['0'];
+      }
+      if (/^GANG\d+$/.test(pedtype) || pedtype === 'CRIMINAL' || pedtype === 'PROSTITUTE' || stat === 'STAT_CRIMINAL' || stat === 'STAT_PROSTITUTE') {
+        return ['1'];
+      }
+      return ['0', '1'];
+    }
+
+    function pickMultipleUnique(pool, minCount, maxCount) {
+      if (!pool || pool.length === 0) return [];
+      const copy = [...new Set(pool)];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      const count = Math.min(copy.length, minCount + Math.floor(Math.random() * (maxCount - minCount + 1)));
+      return copy.slice(0, count);
+    }
+
+    function getContextPedGroupPool(pedtype, stat, animGroup, gender) {
+      if (/^GANG(\d+)$/.test(pedtype)) return { pool: [pedtype], min: 1, max: 1 };
+      if (pedtype === 'COP') return { pool: ['COPS'], min: 1, max: 1 };
+      if (pedtype === 'MEDIC') return { pool: ['MEDIC'], min: 1, max: 1 };
+      if (pedtype === 'FIREMAN') return { pool: ['FIREMAN'], min: 1, max: 1 };
+
+      // Prostitutes: appear in red-light districts + clubs across cities
+      if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE' || animGroup === 'pro') {
+        return { pool: ['POPCYCLE_GROUP_PROSTITUTES', 'POPCYCLE_GROUP_CLUBBERS'], min: 1, max: 2 };
+      }
+
+      // Criminals & Dealers: alleys, poor districts, clubs across cities
+      if (pedtype === 'CRIMINAL' || stat === 'STAT_CRIMINAL') {
+        return {
+          pool: ['POPCYCLE_GROUP_CRIMINALS', 'DEALERS', 'POPCYCLE_GROUP_CASUAL_POOR', 'POPCYCLE_GROUP_CLUBBERS'],
+          min: 2,
+          max: 3
+        };
+      }
+
+      // Rich / Suit / Glamour: downtown LS/SF/LV, casinos, airports, clubs, shopping districts
+      if (stat === 'STAT_SUIT_GUY' || stat === 'STAT_SUIT_GIRL' || RICH_ANIM_GROUPS.has(animGroup)) {
+        return {
+          pool: [
+            'POPCYCLE_GROUP_BUSINESS', 'POPCYCLE_GROUP_CASUAL_RICH', 'POPCYCLE_GROUP_CLUBBERS',
+            'POPCYCLE_GROUP_SHOPPERS', 'POPCYCLE_GROUP_AIRPORT', 'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_GOLFERS'
+          ],
+          min: 2,
+          max: 4
+        };
+      }
+
+      // Beachfolk: beaches + warm city streets & tourists
+      if (stat === 'STAT_BEACH_GUY' || stat === 'STAT_BEACH_GIRL') {
+        return {
+          pool: ['POPCYCLE_GROUP_BEACHFOLK', 'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_CASUAL_AVERAGE', 'POPCYCLE_GROUP_PARKFOLK'],
+          min: 2,
+          max: 3
+        };
+      }
+
+      // Tourists & Shoppers: LV strip, SF piers, LS landmarks, airports, parks
+      if (stat === 'STAT_TOURIST' || stat === 'STAT_SHOPPER') {
+        return {
+          pool: [
+            'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_SHOPPERS', 'POPCYCLE_GROUP_CASUAL_AVERAGE',
+            'POPCYCLE_GROUP_BEACHFOLK', 'POPCYCLE_GROUP_PARKFOLK', 'POPCYCLE_GROUP_AIRPORT'
+          ],
+          min: 2,
+          max: 4
+        };
+      }
+
+      // Elderly & Tramps: poor neighborhoods, parks, rural/desert towns across all regions
+      if (stat === 'STAT_TRAMP_MALE' || stat === 'STAT_OLD_GUY' || stat === 'STAT_OLD_GIRL') {
+        return {
+          pool: [
+            'POPCYCLE_GROUP_CASUAL_POOR', 'POPCYCLE_GROUP_PARKFOLK', 'POPCYCLE_GROUP_SHOPPERS',
+            'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_DESERTFOLK'
+          ],
+          min: 2,
+          max: 3
+        };
+      }
+
+      // General / Everyday Citizens: lively mix across all cities, suburbs, countryside & desert towns
+      return {
+        pool: [
+          'POPCYCLE_GROUP_CASUAL_AVERAGE', 'POPCYCLE_GROUP_CASUAL_POOR', 'POPCYCLE_GROUP_WORKERS',
+          'POPCYCLE_GROUP_SHOPPERS', 'POPCYCLE_GROUP_PARKFOLK', 'POPCYCLE_GROUP_CLUBBERS',
+          'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_DESERTFOLK', 'POPCYCLE_GROUP_SERVANTS'
+        ],
+        min: 2,
+        max: 4
+      };
+    }
+
+    function getContextAudioAndVoices(pedtype, stat, animGroup, gender) {
+      // 1. Emergency / Law Enforcement
+      if (pedtype === 'COP' || pedtype === 'FIREMAN') {
+        return { audioType: 'PED_TYPE_EMG', pool: VOICE_POOLS_CLASSIFIED.emgCop, pairMode: 'distinct' };
+      }
+      if (pedtype === 'MEDIC') {
+        return { audioType: 'PED_TYPE_EMG', pool: VOICE_POOLS_CLASSIFIED.emgMedic, pairMode: 'distinct' };
+      }
+      // 2. Gang Members
+      if (/^GANG(\d+)$/.test(pedtype)) {
+        const gIdx = (parseInt(pedtype.replace('GANG', ''), 10) - 1) % VOICE_POOLS_CLASSIFIED.gang.length;
+        return { audioType: 'PED_TYPE_GANG', pool: VOICE_POOLS_CLASSIFIED.gang[gIdx], pairMode: 'distinct' };
+      }
+      // 3. Female Civilians & Roles
+      if (gender === 'F') {
+        if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE' || animGroup === 'pro') {
+          return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.femalePro, pairMode: 'same' };
+        }
+        if (OLD_ANIM_GROUPS.has(animGroup) || stat === 'STAT_OLD_GIRL') {
+          return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.femaleOld, pairMode: 'same' };
+        }
+        if (stat === 'STAT_SUIT_GIRL' || RICH_ANIM_GROUPS.has(animGroup)) {
+          return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.femaleRich, pairMode: 'same' };
+        }
+        return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.femaleAll, pairMode: 'same' };
+      }
+      // 4. Male Civilians & Roles
+      if (OLD_ANIM_GROUPS.has(animGroup) || stat === 'STAT_OLD_GUY') {
+        return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleOld, pairMode: 'same' };
+      }
+      if (pedtype === 'CRIMINAL' || stat === 'STAT_CRIMINAL' || stat === 'STAT_TOUGH_GUY' || stat === 'STAT_TRAMP_MALE') {
+        return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleToughCrim, pairMode: 'same' };
+      }
+      if (stat === 'STAT_SUIT_GUY') {
+        return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleRich, pairMode: 'same' };
+      }
+      return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleAll, pairMode: 'same' };
+    }
+
+    document.getElementById('btnConfirmRandomizePed').addEventListener('click', async () => {
+      const bl = state.randomBlacklist;
+      const smartSync = document.getElementById('chkSmartContextSync').checked;
+
+      const rawPools = {
+        pedtype: PED_TYPES,
+        stat: PED_STATS,
+        animGroup: ANIM_GROUPS,
+        carsMask: CAR_MASK_PRESETS.map(c => c.v),
+        flags: ['0', '1'],
+        animFile: ANIM_FILES,
+        radio: RADIO_STATIONS.map(r => r.v),
+        audioType: AUDIO_TYPES,
+        voice: ACTIVE_SPC_GA_VOICES.map(v => v.v),
+        pedGroup: state.pedGroupsMaster
+      };
+
+      const on = {};
+      for (const k of ALL_PARAM_KEYS) on[k] = Boolean(document.getElementById(`rnd-${k}`)?.checked);
+
+      closeModal('modalRandomizePed');
+      const targets = state.rows.filter(r => r.selected);
+
+      if (targets.length > 30) {
+        showLoading('Randomizing Selected Peds...', `Processing ${targets.length} peds`, 35);
+        await nextFrame();
+      }
+
+      for (const target of targets) {
+        if (!smartSync) {
+          // RAW MODE: Global pool limited by blacklist (fallback to raw pool if all blacklisted)
+          if (on.pedtype) target.pedtype = randomPick(resolveContextPool(rawPools.pedtype, bl.pedtype));
+          if (on.stat) target.stat = randomPick(resolveContextPool(rawPools.stat, bl.stat));
+          if (on.animGroup) target.animGroup = randomPick(resolveContextPool(rawPools.animGroup, bl.animGroup));
+          if (on.carsMask) target.carsMask = randomPick(resolveContextPool(rawPools.carsMask, bl.carsMask));
+          if (on.flags) target.flags = randomPick(resolveContextPool(rawPools.flags, bl.flags));
+          if (on.animFile) target.animFile = randomPick(resolveContextPool(rawPools.animFile, bl.animFile));
+          if (on.radio1) target.radio1 = randomPick(resolveContextPool(rawPools.radio, bl.radio));
+          if (on.radio2) target.radio2 = randomPick(resolveContextPool(rawPools.radio, bl.radio));
+          if (on.audioType) target.audioType = randomPick(resolveContextPool(rawPools.audioType, bl.audioType));
+          if (on.voice1) target.voice1 = randomPick(resolveContextPool(rawPools.voice, bl.voice));
+          if (on.voice2) target.voice2 = randomPick(resolveContextPool(rawPools.voice, bl.voice));
+          if (on.pedGroup) {
+            const rawPgPool = resolveContextPool(rawPools.pedGroup.filter(g => g !== 'NONE'), bl.pedGroup, rawPools.pedGroup);
+            target.pedGroups = pickMultipleUnique(rawPgPool, 1, 3);
+          }
+          continue;
+        }
+
+        // SMART CONTEXT SYNC MODE:
+        // Each ped evaluates its own locked/existing context -> applies blacklist -> overrides blacklist if context pool becomes empty
+        const forcedGender = document.getElementById('forceGenderMode')?.value || 'auto';
+        const gender = (forcedGender === 'F' || forcedGender === 'M') ? forcedGender : detectPedGender(target);
+
+        if (on.pedtype) {
+          const ptPool = resolveContextPool(getContextPedtypePool(gender), bl.pedtype, rawPools.pedtype);
+          target.pedtype = randomPick(ptPool);
+        }
+
+        // Re-evaluate gender in case pedtype was manually set or rolled to CIVFEMALE/PROSTITUTE
+        const activeGender = (target.pedtype === 'CIVFEMALE' || target.pedtype === 'PROSTITUTE') ? 'F' : gender;
+
+        if (on.stat) {
+          const stPool = resolveContextPool(getContextStatPool(target.pedtype, activeGender), bl.stat, rawPools.stat);
+          target.stat = randomPick(stPool);
+        }
+
+        if (on.animGroup) {
+          const agPool = resolveContextPool(getContextAnimGroupPool(target.pedtype, target.stat, activeGender), bl.animGroup, rawPools.animGroup);
+          target.animGroup = randomPick(agPool);
+        }
+
+        if (on.carsMask) {
+          const cmPool = resolveContextPool(rawPools.carsMask, bl.carsMask);
+          target.carsMask = randomPick(cmPool);
+        }
+
+        if (on.flags) {
+          const flPool = resolveContextPool(getContextFlagsPool(target.pedtype, target.stat, target.animGroup), bl.flags, rawPools.flags);
+          target.flags = randomPick(flPool);
+        }
+
+        if (on.animFile) {
+          const afPool = resolveContextPool(getContextAnimFilePool(target.pedtype, target.stat, target.animGroup), bl.animFile, rawPools.animFile);
+          target.animFile = randomPick(afPool);
+        }
+
+        if (on.radio1) target.radio1 = randomPick(resolveContextPool(rawPools.radio, bl.radio));
+        if (on.radio2) target.radio2 = randomPick(resolveContextPool(rawPools.radio, bl.radio));
+
+        const voiceCtx = getContextAudioAndVoices(target.pedtype, target.stat, target.animGroup, activeGender);
+        if (on.audioType) {
+          const atPool = resolveContextPool([voiceCtx.audioType], bl.audioType, rawPools.audioType);
+          target.audioType = randomPick(atPool);
+        }
+
+        if (on.voice1 || on.voice2) {
+          const vPool = resolveContextPool(voiceCtx.pool, bl.voice, rawPools.voice);
+          const pickedV1 = randomPick(vPool);
+          if (on.voice1) target.voice1 = pickedV1;
+          if (on.voice2) {
+            target.voice2 = (voiceCtx.pairMode === 'same' && on.voice1)
+              ? pickedV1
+              : randomPick(vPool);
+          }
+        }
+
+        if (on.pedGroup) {
+          const pgCtx = getContextPedGroupPool(target.pedtype, target.stat, target.animGroup, activeGender);
+          const pgPool = resolveContextPool(
+            pgCtx.pool,
+            bl.pedGroup,
+            rawPools.pedGroup.filter(g => g !== 'NONE')
+          );
+          target.pedGroups = pickMultipleUnique(pgPool, pgCtx.min, pgCtx.max);
+        }
+      }
+
+      if (targets.length > 30) updateLoading('Rendering updated table...', 85);
+      renderTable();
+      hideLoading();
+      toast(
+        `${smartSync ? 'Smart Context Sync' : 'Raw'} randomization applied across ${targets.length} selected peds!`,
+        'success'
+      );
+    });
+
+    // =========================================================================
+    // 9. LAZY-LOADED 3D PED VIEWER (STRIPPED & ZERO MEMORY LEAK)
+    // =========================================================================
+    let cached3DLibs = null;
+
+    async function load3DLibraries() {
+      if (cached3DLibs) return cached3DLibs;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        throw new Error('Perangkat sedang offline. Sambungkan internet sebentar untuk memuat modul 3D Viewer dari CDN (esm.sh / jsdelivr).');
+      }
+
+      try {
+        const [THREE, { OrbitControls }, { DFFLoader, TXDLoader }] = await Promise.all([
+          import('three'),
+          import('three/addons/controls/OrbitControls.js'),
+          import('dff-loader')
+        ]);
+        cached3DLibs = { THREE, OrbitControls, DFFLoader, TXDLoader };
+        return cached3DLibs;
+      } catch (primaryCdnErr) {
+        console.warn('Primary CDN (esm.sh) failed, trying jsDelivr fallback:', primaryCdnErr);
+        try {
+          const [THREE, { OrbitControls }, { DFFLoader, TXDLoader }] = await Promise.all([
+            import('https://cdn.jsdelivr.net/npm/three@0.170.0/+esm'),
+            import('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js/+esm'),
+            import('https://cdn.jsdelivr.net/npm/dff-loader@1.0.1/+esm')
+          ]);
+          cached3DLibs = { THREE, OrbitControls, DFFLoader, TXDLoader };
+          return cached3DLibs;
+        } catch (fallbackCdnErr) {
+          throw new Error(`Failed to load 3D library from primary (esm.sh) & backup (jsDelivr) CDN. Ensure internet connection is active when opening 3D Viewer (${fallbackCdnErr.message}).`);
+        }
+      }
+    }
+
+    function createPedViewerInstance(libs, container, onStatus) {
+      const { THREE, OrbitControls, DFFLoader, TXDLoader } = libs;
+      let disposed = false;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#20252e');
+
+      const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 10000);
+      camera.position.set(2.8, 1.8, 3.8);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'default' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      renderer.domElement.className = 'three-canvas';
+      container.appendChild(renderer.domElement);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+      controls.target.set(0, 0.9, 0);
+      controls.minDistance = 0.25;
+      controls.maxDistance = 100;
+
+      scene.add(new THREE.HemisphereLight(0xc9d9f2, 0x39313a, 2.0));
+      const key = new THREE.DirectionalLight(0xffe2bb, 3.0);
+      key.position.set(3, 6, 4);
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0x8caeea, 1.2);
+      fill.position.set(-4, 2, -3);
+      scene.add(fill);
+
+      const grid = new THREE.GridHelper(16, 32, 0x596273, 0x343b48);
+      scene.add(grid);
+
+      let modelPivot = null;
+      let modelRoot = null;
+      let textureMap = null;
+      let wireframe = false;
+      let rafId = 0;
+
+      const resize = () => {
+        if (disposed || !container) return;
+        const w = Math.max(1, container.clientWidth);
+        const h = Math.max(1, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+      };
+
+      const resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(container);
+      resize();
+
+      const animate = () => {
+        if (disposed) return;
+        rafId = requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      };
+      rafId = requestAnimationFrame(animate);
+
+      const clearModel = () => {
+        if (modelPivot) {
+          scene.remove(modelPivot);
+          modelPivot = null;
+        }
+        if (modelRoot) {
+          modelRoot.traverse(obj => {
+            obj.geometry?.dispose();
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(mat => {
+              if (!mat) return;
+              mat.map?.dispose();
+              mat.normalMap?.dispose();
+              mat.specularMap?.dispose();
+              mat.alphaMap?.dispose();
+              mat.dispose();
+            });
+          });
+          modelRoot = null;
+        }
+        if (textureMap) {
+          for (const tex of textureMap.values()) {
+            if (tex && typeof tex.dispose === 'function') {
+              if (tex.image && typeof tex.image.close === 'function') tex.image.close();
+              tex.dispose();
+            }
+          }
+          textureMap.clear();
+          textureMap = null;
+        }
+      };
+
+      const alignToFloorAndCenter = () => {
+        if (!modelPivot || !modelRoot) return;
+        modelRoot.position.set(0, 0, 0);
+        modelPivot.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(modelPivot);
+        if (box.isEmpty()) return;
+        const center = box.getCenter(new THREE.Vector3());
+        // Center X/Z and place feet flush on Y = 0 grid
+        modelRoot.position.set(-center.x, -box.min.y, -center.z);
+        modelPivot.updateMatrixWorld(true);
+      };
+
+      const fitModel = () => {
+        if (!modelPivot) return;
+        alignToFloorAndCenter();
+        const box = new THREE.Box3().setFromObject(modelPivot);
+        if (box.isEmpty()) return;
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z, 0.1);
+        controls.target.copy(center);
+        camera.position.set(center.x + maxDim * 1.15, center.y + maxDim * 0.35, center.z + maxDim * 1.55);
+        camera.near = Math.max(maxDim / 1000, 0.001);
+        camera.far = maxDim * 100;
+        camera.updateProjectionMatrix();
+        controls.minDistance = maxDim * 0.15;
+        controls.maxDistance = maxDim * 20;
+        controls.update();
+      };
+
+      const compute3DStats = () => {
+        let vertices = 0;
+        let triangles = 0;
+        let meshes = 0;
+        const materials = new Set();
+        modelRoot?.traverse(obj => {
+          if (obj.isMesh || obj.isSkinnedMesh) {
+            meshes++;
+            const g = obj.geometry;
+            if (g?.attributes?.position) vertices += g.attributes.position.count;
+            if (g?.index) triangles += Math.round(g.index.count / 3);
+            else if (g?.attributes?.position) triangles += Math.round(g.attributes.position.count / 3);
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(m => { if (m) materials.add(m); });
+          }
+        });
+        return { vertices, triangles, meshes, materials: materials.size };
+      };
+
+      return {
+        get wireframe() { return wireframe; },
+        async loadPed(dffBuffer, txdBuffer) {
+          if (disposed) return;
+          clearModel();
+          let texCount = 0;
+          let fallbackNote = '';
+
+          let txdNote = '';
+          if (txdBuffer) {
+            try {
+              const txdParser = new TXDLoader();
+              textureMap = txdParser.parse(txdBuffer);
+              texCount = textureMap ? textureMap.size : 0;
+            } catch (txdErr) {
+              console.warn('TXD parse warning (PS2/Xbox/DXT/palette format), falling back to untextured DFF:', txdErr);
+              textureMap = null;
+              txdNote = ' (TXD Compression/Palette Unsupported — Untextured)';
+            }
+          }
+
+          let nextModel = null;
+          try {
+            const dffParser = new DFFLoader();
+            if (textureMap) dffParser.setTextureDictionary(textureMap);
+            nextModel = dffParser.parse(dffBuffer);
+          } catch (primaryErr) {
+            console.warn('Primary DFF parse failed, attempting safe-texture & geometry fallbacks:', primaryErr);
+            // Fallback Level 1A: Retry DFF WITH safe texture dictionary wrapper (preserves textures when RW Material Effects/Specular PLG fails)
+            if (textureMap && textureMap.size > 0) {
+              try {
+                const safeTexDict = new Map();
+                for (const [k, tex] of textureMap.entries()) {
+                  if (tex) safeTexDict.set(k.toLowerCase(), tex);
+                }
+                const safeProxyDict = {
+                  get: (k) => safeTexDict.get(String(k || '').toLowerCase()) || null,
+                  has: (k) => safeTexDict.has(String(k || '').toLowerCase()),
+                  size: safeTexDict.size,
+                  values: () => safeTexDict.values(),
+                  entries: () => safeTexDict.entries()
+                };
+                const texRetryParser = new DFFLoader();
+                texRetryParser.setTextureDictionary(safeProxyDict);
+                nextModel = texRetryParser.parse(dffBuffer);
+                fallbackNote = ' (Safe-Texture Fallback — Specular/Material PLG Bypassed)';
+              } catch (safeTexErr) {
+                console.warn('Safe-texture retry failed, falling back to geometry-only DFF:', safeTexErr);
+              }
+            }
+
+            // Fallback Level 1B: Parse DFF without TXD binding
+            if (!nextModel) {
+              try {
+                const retryParser = new DFFLoader();
+                nextModel = retryParser.parse(dffBuffer);
+                fallbackNote = txdNote || ' (Untextured Mesh Fallback — Non-standard RW material section)';
+              } catch (secondaryErr) {
+                console.warn('Geometry-only DFF parse also failed, showing proxy silhouette:', secondaryErr);
+                // Fallback Level 2: Render neutral studio proxy so viewer never crashes
+                const proxyGroup = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.65, wireframe: true });
+                const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 1.35, 16), bodyMat);
+                torso.position.y = 0.675;
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), bodyMat);
+                head.position.y = 1.55;
+                proxyGroup.add(torso, head);
+                nextModel = proxyGroup;
+                fallbackNote = ` (3D Preview Unsupported by Web Parser: ${secondaryErr.message} — Valid in GTA SA)`;
+              }
+            }
+          }
+
+          if (!nextModel) throw new Error('DFF parser returned an empty model.');
+
+          modelRoot = nextModel;
+          modelRoot.traverse(obj => {
+            if (obj.isMesh || obj.isSkinnedMesh) {
+              const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+              for (const mat of mats) {
+                if (!mat) continue;
+                mat.side = THREE.DoubleSide;
+                if (fallbackNote.includes('Proxy')) mat.wireframe = true;
+                else mat.wireframe = wireframe;
+                if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+                if ('roughness' in mat && mat.roughness === undefined) mat.roughness = 0.82;
+              }
+            }
+          });
+
+          modelPivot = new THREE.Group();
+          modelPivot.add(modelRoot);
+          scene.add(modelPivot);
+
+          // Auto-correct GTA SA Z-Up lying-down ped orientation
+          modelPivot.updateMatrixWorld(true);
+          const rawBox = new THREE.Box3().setFromObject(modelPivot);
+          const rawSize = rawBox.getSize(new THREE.Vector3());
+          if (rawSize.z > rawSize.y * 1.25 && rawSize.z >= rawSize.x) {
+            modelPivot.rotation.x = -Math.PI / 2;
+          } else if (rawSize.x > rawSize.y * 1.35 && rawSize.x > rawSize.z) {
+            modelPivot.rotation.z = Math.PI / 2;
+          }
+
+          fitModel();
+          const stats = compute3DStats();
+          const baseStatus = fallbackNote
+            ? `DFF Loaded${fallbackNote}`
+            : (txdBuffer ? `DFF + TXD Loaded (${texCount} textures)` : 'DFF Loaded (No TXD)');
+
+          onStatus({
+            statusText: baseStatus,
+            stats
+          });
+        },
+        rotateUprightStep() {
+          if (!modelPivot) return;
+          if (Math.abs(modelPivot.rotation.x) < 0.01) {
+            modelPivot.rotation.x = -Math.PI / 2;
+          } else {
+            modelPivot.rotation.x = 0;
+            modelPivot.rotation.y += Math.PI / 2;
+          }
+          fitModel();
+        },
+        setWireframe(enabled) {
+          wireframe = enabled;
+          modelRoot?.traverse(obj => {
+            if (!obj.isMesh && !obj.isSkinnedMesh) return;
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            mats.forEach(m => { if (m) m.wireframe = enabled; });
+          });
+        },
+        resetCamera() {
+          if (modelPivot) fitModel();
+          else {
+            camera.position.set(2.8, 1.8, 3.8);
+            controls.target.set(0, 0.9, 0);
+            controls.update();
+          }
+        },
+        destroy() {
+          if (disposed) return;
+          disposed = true;
+          if (rafId) cancelAnimationFrame(rafId);
+          resizeObserver.disconnect();
+          clearModel();
+          scene.remove(grid);
+          grid.geometry?.dispose();
+          grid.material?.dispose();
+          controls.dispose();
+          renderer.dispose();
+          renderer.forceContextLoss();
+          renderer.domElement?.remove();
+        }
+      };
+    }
+
+    function formatBytes(bytes) {
+      if (bytes == null || isNaN(bytes)) return '-';
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    async function openPedViewer(row) {
+      if (!row.dffHandle) {
+        toast(`No .dff file available for "${row.modelName}".`, 'warning');
+        return;
+      }
+
+      closePedViewer();
+
+      document.getElementById('viewerTitle').textContent = `[${row.id}] ${row.modelName}`;
+      document.getElementById('viewerStatus').textContent = 'Loading 3D engine & DFF/TXD files...';
+      document.getElementById('viewerFileSize').textContent = 'DFF: ... | TXD: ...';
+      document.getElementById('viewerMeshStats').textContent = 'Verts: - • Tris: - • Meshes: -';
+      document.getElementById('btnViewerWire').style.background = '';
+      openModal('modalViewer');
+
+      try {
+        const libs = await load3DLibraries();
+        if (!document.getElementById('modalViewer').classList.contains('open')) return;
+
+        const host = document.getElementById('viewerCanvasHost');
+        const viewer = createPedViewerInstance(libs, host, ({ statusText, stats }) => {
+          document.getElementById('viewerStatus').textContent = statusText;
+          if (stats) {
+            document.getElementById('viewerMeshStats').textContent =
+              `Verts: ${stats.vertices.toLocaleString()} • Tris: ${stats.triangles.toLocaleString()} • Meshes: ${stats.meshes} • Mats: ${stats.materials}`;
+          }
+        });
+        state.activeViewer = viewer;
+
+        const dffFile = await row.dffHandle.getFile();
+        const txdFile = row.txdHandle ? await row.txdHandle.getFile() : null;
+        document.getElementById('viewerFileSize').textContent =
+          `DFF: ${formatBytes(dffFile.size)} | TXD: ${txdFile ? formatBytes(txdFile.size) : 'None'}`;
+
+        const dffBuffer = await dffFile.arrayBuffer();
+        const txdBuffer = txdFile ? await txdFile.arrayBuffer() : null;
+        await viewer.loadPed(dffBuffer, txdBuffer);
+      } catch (err) {
+        console.error(err);
+        document.getElementById('viewerStatus').textContent = `3D Viewer Offline / CDN Error: ${err.message}`;
+        toast(`3D Render Error: ${err.message}`, 'error');
+      }
+    }
+
+    function closePedViewer() {
+      if (state.activeViewer) {
+        state.activeViewer.destroy();
+        state.activeViewer = null;
+      }
+      closeModal('modalViewer');
+    }
+
+    document.getElementById('btnCloseViewer').addEventListener('click', closePedViewer);
+
+    document.getElementById('btnViewerRotate').addEventListener('click', () => {
+      state.activeViewer?.rotateUprightStep();
+    });
+
+    document.getElementById('btnViewerWire').addEventListener('click', (e) => {
+      if (!state.activeViewer) return;
+      const next = !state.activeViewer.wireframe;
+      state.activeViewer.setWireframe(next);
+      e.target.style.background = next ? 'var(--accent)' : '';
+    });
+
+    document.getElementById('btnViewerReset').addEventListener('click', () => {
+      state.activeViewer?.resetCamera();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('modalViewer').classList.contains('open')) {
+        closePedViewer();
+      }
+    });
+
+    // =========================================================================
+    // 10. EXPORT OUTPUT (DIRECT FOLDER ON HTTPS + AUTOMATIC ZIP ON file://)
+    // =========================================================================
+    function generatePedsAddonsIde() {
+      const lines = ['peds'];
+      for (const r of state.rows) {
+        const safeModel = sanitizeGtaAssetName(r.modelName, String(r.id));
+        const safeTxd = sanitizeGtaAssetName(r.txdName, safeModel);
+        lines.push(
+          `${r.id}, ${safeModel}, ${safeTxd}, ${r.pedtype}, ${r.stat}, ${r.animGroup}, ` +
+          `${r.carsMask},${r.flags}, ${r.animFile},${r.radio1},${r.radio2},${r.audioType},${r.voice1},${r.voice2}`
+        );
+      }
+      lines.push('end');
+      return lines.join('\r\n') + '\r\n';
+    }
+
+    function generatePedGrpDat() {
+      const addByGroup = new Map();
+      for (const r of state.rows) {
+        const groups = Array.isArray(r.pedGroups) ? r.pedGroups : [];
+        for (const grp of groups) {
+          if (!grp || grp === 'NONE') continue;
+          if (!addByGroup.has(grp)) addByGroup.set(grp, []);
+          const list = addByGroup.get(grp);
+          if (!list.some(x => x.toLowerCase() === r.modelName.toLowerCase())) {
+            list.push(r.modelName);
+          }
+        }
+      }
+
+      // Mode 1: Original vanilla pedgrp.dat provided -> append new add-on peds to matching group lines
+      if (state.vanillaPedGrpText && state.vanillaPedGrpText.trim().length > 0) {
+        const usedGroups = new Set();
+        const outLines = state.vanillaPedGrpText.split(/\r?\n/).map(rawLine => {
+          const trimmed = rawLine.trim();
+          if (!trimmed || trimmed.startsWith('#')) return rawLine;
+          const hashIdx = rawLine.indexOf('#');
+          const dataPart = hashIdx >= 0 ? rawLine.slice(0, hashIdx).trim() : trimmed;
+          const groupName = hashIdx >= 0 ? rawLine.slice(hashIdx + 1).trim() : '';
+          if (!groupName) return rawLine;
+
+          usedGroups.add(groupName);
+          const extras = addByGroup.get(groupName) || [];
+          if (extras.length === 0) return rawLine;
+
+          const existing = dataPart.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+          const existingLow = new Set(existing.map(s => s.toLowerCase()));
+          for (const m of extras) {
+            if (!existingLow.has(m.toLowerCase())) existing.push(m);
+          }
+          return `${existing.join(', ')}\t\t# ${groupName}`;
+        });
+
+        // Append any custom groups not present in vanilla pedgrp.dat
+        for (const [grpName, members] of addByGroup.entries()) {
+          if (!usedGroups.has(grpName) && members.length > 0) {
+            outLines.push(`${members.join(', ')}\t\t# ${grpName}`);
+          }
+        }
+        return outLines.join('\r\n');
+      }
+
+      // Mode 2: Add-on only pedgrp.dat
+      const grouped = new Map();
+      for (const g of state.pedGroupsMaster) {
+        if (g !== 'NONE') grouped.set(g, []);
+      }
+      for (const [g, set] of state.rawPedGrpExtras.entries()) {
+        if (!grouped.has(g)) grouped.set(g, []);
+        grouped.get(g).push(...set);
+      }
+      for (const [grpName, members] of addByGroup.entries()) {
+        if (!grouped.has(grpName)) grouped.set(grpName, []);
+        const list = grouped.get(grpName);
+        for (const m of members) {
+          if (!list.some(x => x.toLowerCase() === m.toLowerCase())) list.push(m);
+        }
+      }
+
+      const lines = [];
+      for (const [grpName, members] of grouped.entries()) {
+        if (members.length === 0) continue;
+        lines.push(`${members.join(', ')} # ${grpName}`);
+      }
+      return lines.join('\r\n') + '\r\n';
+    }
+
+    // Pure-JS Zero-Dependency ZIP Writer (STORE mode) for local file:// export
+    const CRC32_TABLE = (() => {
+      const tbl = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+        tbl[i] = c;
+      }
+      return tbl;
+    })();
+
+    function crc32Bytes(u8) {
+      let crc = 0xffffffff;
+      for (let i = 0; i < u8.length; i++) {
+        crc = CRC32_TABLE[(crc ^ u8[i]) & 0xff] ^ (crc >>> 8);
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function buildZipBlob(entries) {
+      const enc = new TextEncoder();
+      const localParts = [];
+      const centralParts = [];
+      let offset = 0;
+
+      for (const item of entries) {
+        const nameBytes = enc.encode(item.path);
+        const crc = item.crc;
+        const size = item.size;
+        const payload = item.blob || item.data;
+
+        // Local File Header (30 bytes + nameBytes)
+        const lfh = new Uint8Array(30 + nameBytes.length);
+        const ldv = new DataView(lfh.buffer);
+        ldv.setUint32(0, 0x04034b50, true);
+        ldv.setUint16(4, 20, true);
+        ldv.setUint16(6, 0x0800, true); // UTF-8
+        ldv.setUint16(8, 0, true);      // STORE (uncompressed)
+        ldv.setUint16(10, 0, true);
+        ldv.setUint16(12, 0, true);
+        ldv.setUint32(14, crc, true);
+        ldv.setUint32(18, size, true);
+        ldv.setUint32(22, size, true);
+        ldv.setUint16(26, nameBytes.length, true);
+        ldv.setUint16(28, 0, true);
+        lfh.set(nameBytes, 30);
+
+        localParts.push(lfh, payload);
+
+        // Central Directory Header (46 bytes + nameBytes)
+        const cdh = new Uint8Array(46 + nameBytes.length);
+        const cdv = new DataView(cdh.buffer);
+        cdv.setUint32(0, 0x02014b50, true);
+        cdv.setUint16(4, 20, true);
+        cdv.setUint16(6, 20, true);
+        cdv.setUint16(8, 0x0800, true);
+        cdv.setUint16(10, 0, true);
+        cdv.setUint16(12, 0, true);
+        cdv.setUint16(14, 0, true);
+        cdv.setUint32(16, crc, true);
+        cdv.setUint32(20, size, true);
+        cdv.setUint32(24, size, true);
+        cdv.setUint16(28, nameBytes.length, true);
+        cdv.setUint16(30, 0, true);
+        cdv.setUint16(32, 0, true);
+        cdv.setUint16(34, 0, true);
+        cdv.setUint16(36, 0, true);
+        cdv.setUint32(38, 0, true);
+        cdv.setUint32(42, offset, true);
+        cdh.set(nameBytes, 46);
+
+        centralParts.push(cdh);
+        offset += lfh.length + size;
+      }
+
+      let cdSize = 0;
+      for (const c of centralParts) cdSize += c.length;
+
+      const eocd = new Uint8Array(22);
+      const edv = new DataView(eocd.buffer);
+      edv.setUint32(0, 0x06054b50, true);
+      edv.setUint16(4, 0, true);
+      edv.setUint16(6, 0, true);
+      edv.setUint16(8, entries.length, true);
+      edv.setUint16(10, entries.length, true);
+      edv.setUint32(12, cdSize, true);
+      edv.setUint32(16, offset, true);
+      edv.setUint16(20, 0, true);
+
+      return new Blob([...localParts, ...centralParts, eocd], { type: 'application/zip' });
+    }
+
+    async function writeTextFile(dirHandle, filename, content) {
+      const fh = await dirHandle.getFileHandle(filename, { create: true });
+      const writable = await fh.createWritable();
+      await writable.write(content);
+      await writable.close();
+    }
+
+    async function copyBinaryHandle(srcHandle, destDirHandle, destFilename) {
+      // Read entire source file into memory BEFORE calling createWritable()
+      // to prevent 0-byte truncation when exporting into the same imported folder
+      const file = await srcHandle.getFile();
+      const buf = await file.arrayBuffer();
+      const destFh = await destDirHandle.getFileHandle(destFilename, { create: true });
+      const writable = await destFh.createWritable();
+      await writable.write(buf);
+      await writable.close();
+    }
+
+    document.getElementById('vanillaPedGrpInput').addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      const statusEl = document.getElementById('vanillaPedGrpStatus');
+      if (!file) {
+        state.vanillaPedGrpText = '';
+        statusEl.textContent = 'Not attached — pedgrp.dat will only contain add-on peds.';
+        statusEl.style.color = 'var(--text-muted)';
+        return;
+      }
+      state.vanillaPedGrpText = await file.text();
+      statusEl.textContent = `✓ Loaded "${file.name}" — Add-on peds will be merged into vanilla groups!`;
+      statusEl.style.color = '#34d399';
+    });
+
+    async function exportOutput() {
+      if (state.rows.length === 0) {
+        toast('No ped entries available to export.', 'warning');
+        return;
+      }
+
+      const ideText = generatePedsAddonsIde();
+      const grpText = generatePedGrpDat();
+      const loaderText = 'IDE DATA\\MAPS\\peds_addons.ide\r\n';
+      const totalRows = state.rows.length;
+
+      // 1. Direct directory write (GitHub Pages / localhost)
+      if (window.isSecureContext && typeof window.showDirectoryPicker === 'function') {
+        try {
+          const outRoot = await window.showDirectoryPicker({ mode: 'readwrite' });
+          showLoading('Exporting to Folder...', 'Writing IDE, pedgrp.dat & loader.txt...', 5);
+          await nextFrame();
+
+          const outDataDir = await outRoot.getDirectoryHandle('data', { create: true });
+          const outModelsDir = await outRoot.getDirectoryHandle('models', { create: true });
+          const outGta3Dir = await outModelsDir.getDirectoryHandle('gta3', { create: true });
+
+          await writeTextFile(outDataDir, 'peds_addons.ide', ideText);
+          await writeTextFile(outDataDir, 'pedgrp.dat', grpText);
+          await writeTextFile(outDataDir, 'loader.txt', loaderText);
+
+          let copiedDff = 0;
+          let copiedTxd = 0;
+          for (let i = 0; i < totalRows; i++) {
+            const r = state.rows[i];
+            const safeModel = sanitizeGtaAssetName(r.modelName, String(r.id));
+            const safeTxd = sanitizeGtaAssetName(r.txdName, safeModel);
+            const pct = 10 + Math.round(((i + 1) / totalRows) * 88);
+            updateLoading(`Syncing [${i + 1}/${totalRows}]: ${safeModel}.dff / .txd`, pct);
+            if (i % 5 === 0) await nextFrame();
+
+            if (r.dffHandle) {
+              await copyBinaryHandle(r.dffHandle, outGta3Dir, `${safeModel}.dff`);
+              copiedDff++;
+            }
+            if (r.txdHandle) {
+              await copyBinaryHandle(r.txdHandle, outGta3Dir, `${safeTxd}.txd`);
+              copiedTxd++;
+            }
+          }
+
+          hideLoading();
+          toast(
+            `Export Complete! (${totalRows} IDE entries, ${copiedDff} DFF & ${copiedTxd} TXD synced in /${outRoot.name})`,
+            'success'
+          );
+          return;
+        } catch (err) {
+          hideLoading();
+          if (err.name === 'AbortError') return;
+          console.warn('Direct folder export blocked, falling back to ZIP archive:', err);
+        }
+      }
+
+      // 2. Local file:// fallback -> Structured ZIP with live progress bar
+      try {
+        showLoading('Building Output ZIP...', 'Packing data/ config files...', 5);
+        await nextFrame();
+
+        const enc = new TextEncoder();
+        const makeTextZipEntry = (path, text) => {
+          const u8 = enc.encode(text);
+          return { path, data: u8, crc: crc32Bytes(u8), size: u8.length };
+        };
+
+        const zipEntries = [
+          makeTextZipEntry('data/peds_addons.ide', ideText),
+          makeTextZipEntry('data/pedgrp.dat', grpText),
+          makeTextZipEntry('data/loader.txt', loaderText)
+        ];
+
+        let copiedDff = 0;
+        let copiedTxd = 0;
+        for (let i = 0; i < totalRows; i++) {
+          const r = state.rows[i];
+          const safeModel = sanitizeGtaAssetName(r.modelName, String(r.id));
+          const safeTxd = sanitizeGtaAssetName(r.txdName, safeModel);
+          const pct = 10 + Math.round(((i + 1) / totalRows) * 75);
+          updateLoading(`Indexing [${i + 1}/${totalRows}]: ${safeModel}`, pct);
+          if (i % 5 === 0) await nextFrame();
+
+          if (r.dffHandle) {
+            const fileObj = await r.dffHandle.getFile();
+            const crc = crc32Bytes(new Uint8Array(await fileObj.arrayBuffer()));
+            zipEntries.push({
+              path: `models/gta3/${safeModel}.dff`,
+              blob: fileObj,
+              crc,
+              size: fileObj.size
+            });
+            copiedDff++;
+          }
+          if (r.txdHandle) {
+            const fileObj = await r.txdHandle.getFile();
+            const crc = crc32Bytes(new Uint8Array(await fileObj.arrayBuffer()));
+            zipEntries.push({
+              path: `models/gta3/${safeTxd}.txd`,
+              blob: fileObj,
+              crc,
+              size: fileObj.size
+            });
+            copiedTxd++;
+          }
+        }
+
+        updateLoading('Compressing & generating ZIP archive...', 92);
+        await nextFrame();
+
+        const blob = buildZipBlob(zipEntries);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'GTA_SA_Ped_Addons_Output.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+        hideLoading();
+        toast(`ZIP Export Complete! (${totalRows} IDE entries, ${copiedDff} DFF & ${copiedTxd} TXD synced)`, 'success');
+      } catch (err) {
+        hideLoading();
+        console.error(err);
+        toast(`Export failed: ${err.message}`, 'error');
+      }
+    }
+
+    // =========================================================================
+    // 11. BUTTON & FILTER BINDINGS
+    // =========================================================================
+    document.getElementById('btnImportFolder').addEventListener('click', triggerImportFolder);
+    document.getElementById('btnEmptyImport').addEventListener('click', triggerImportFolder);
+
+    document.getElementById('btnEmptyNew').addEventListener('click', () => {
+      state.rows.push(createDefaultPed({ id: 14000, modelName: '14000', txdName: '14000' }));
+      renderTable();
+    });
+
+    document.getElementById('btnAddRow').addEventListener('click', () => {
+      let nextId = 14000;
+      for (const r of state.rows) {
+        if (r.id >= nextId) nextId = r.id + 1;
+      }
+      state.rows.push(createDefaultPed({
+        id: nextId,
+        modelName: String(nextId),
+        txdName: String(nextId)
+      }));
+      renderTable();
+      const wrapper = document.getElementById('sheetWrapper');
+      wrapper.scrollTop = wrapper.scrollHeight;
+    });
+
+    document.getElementById('btnAutoRename').addEventListener('click', () => {
+      if (state.rows.length === 0) return;
+      openModal('modalAutoRename');
+    });
+
+    document.getElementById('btnConfirmAutoRename').addEventListener('click', () => {
+      const startId = parseInt(document.getElementById('renameStartId').value, 10) || 14000;
+      const mode = document.getElementById('renameMode').value;
+      closeModal('modalAutoRename');
+      applyAutoRename(startId, mode);
+    });
+
+    document.getElementById('btnCheckClash').addEventListener('click', fixClashesOnly);
+
+    document.getElementById('btnClearAll').addEventListener('click', () => {
+      if (state.rows.length === 0) return;
+      if (!confirm('Clear all rows in the current sheet?')) return;
+      state.rows = [];
+      state.rawPedGrpExtras.clear();
+      state.lastCheckedIndex = null;
+      renderTable();
+      toast('All sheet data has been cleared.', 'info');
+    });
+
+    document.getElementById('btnExportFolder').addEventListener('click', () => {
+      if (state.rows.length === 0) {
+        toast('No ped entries available to export.', 'warning');
+        return;
+      }
+      openModal('modalExportOptions');
+    });
+
+    document.getElementById('btnConfirmExport').addEventListener('click', () => {
+      closeModal('modalExportOptions');
+      exportOutput();
+    });
+    
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('filterGroup').addEventListener('change', renderTable);
+    document.getElementById('filterFileStatus').addEventListener('change', renderTable);
+
+    // Initialize empty view
+    refreshPedGroupDropdownFilter();
+    renderTable();
+  </script>
+</body>
+</html>
