@@ -149,7 +149,7 @@ Before adding new pedestrians to GTA San Andreas, you **must** set up two essent
 
 ---
 
-### Step B: Expand Ped, Killable ID & Group Limits in Fastman92 Limit Adjuster
+### Step B: Expand Ped, Killable ID & Group Limits in Fastman92 Limit Adjuster & Open Limit Adjuster
 
 - **Download:** [Fastman92 Limit Adjuster on LibertyCity.net](https://libertycity.net/files/gta-san-andreas/223963-fastman92-limit-adjuster.html)
 - **Why It Is Mandatory:**
