@@ -185,6 +185,10 @@ Pedgrp peds per group = 100
 
 ---
 
+4. Install Open Limit Adjuster]
+Adjust some limits automatically that needed for ped addon
+([#install-open-limit-adjuster](https://www.mixmods.com.br/2022/10/open-limit-adjuster/))
+
 ## 4. Importing Files & Folder Structure Scenarios
 
 When you click **`📂 Import Folder`**, select your **project root folder**. The tool automatically detects which of the following three folder structures you are using (and can even combine them!):
