@@ -2,7 +2,7 @@
 
 ## 1. High-Level System Architecture
 
-**GTA SA Ped Add-On Studio** is intentionally engineered as a **zero-build, single-file application (`index.html`)**. By avoiding bundlers (`Webpack`, `Vite`) and external runtime frameworks (`React`, `Vue`), any modder or developer can double-click `index.html` locally via `file://` or host it statically on GitHub Pages (`https://`) with zero compilation steps.
+**GTA SA Ped Add-On Studio** is intentionally engineered as a **zero-build, single-file application (`index.html`)**. By avoiding bundlers (`Webpack`, `Vite`) and external runtime frameworks (`React`, `Vue`), any modder or developer can double-click `index.html` locally via `file://` or host it statically on GitHub Pages (`https://redrafgg-afk.github.io/GTA-SA-Ped-Add-On-Studio/`) with zero compilation steps.
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────────────┐

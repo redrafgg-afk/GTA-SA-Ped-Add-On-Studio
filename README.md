@@ -1,5 +1,8 @@
 # 🧍 GTA SA Ped Add-On Studio
 
+[![Launch Web App](https://img.shields.io/badge/🚀_Launch_Web_App-Live_Demo-2ea44f?style=for-the-badge)](https://redrafgg-afk.github.io/GTA-SA-Ped-Add-On-Studio/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
+
 > **A zero-installation, browser-based bulk spreadsheet workbench & interactive 3D DFF/TXD viewer for creating, merging, validating, and exporting non-replacing Add-On Pedestrians for Grand Theft Auto: San Andreas.**
 
 ---
@@ -61,16 +64,24 @@ Adding brand-new pedestrians to **GTA San Andreas** without overwriting existing
 | **Modloader-Ready Export** | Merges your new peds into your game's original `pedgrp.dat`, generates `peds_addons.ide` + `loader.txt`, and packages all synced `.dff`/`.txd` files. |
 
 ### How to Access the Tool
+
+**🌐 Live Web App (Recommended):** **[https://redrafgg-afk.github.io/GTA-SA-Ped-Add-On-Studio/](https://redrafgg-afk.github.io/GTA-SA-Ped-Add-On-Studio/)**
+
 **GTA SA Ped Add-On Studio** runs in a **dual-mode browser architecture** (recommended browsers: **Google Chrome**, **Microsoft Edge**, or **Brave**):
+
+| Mode | Access Method | How It Works |
+| :--- | :--- | :--- |
+| **MODE 1: Online / Hosted (`https://`)** | **[Launch Live Web App](https://redrafgg-afk.github.io/GTA-SA-Ped-Add-On-Studio/)** | Uses the modern File System Access API to read and write files directly into your chosen folder without needing to extract a ZIP archive[cite: 3]. |
+| **MODE 2: Offline / Local (`file://`)** | Download `index.html` from [Releases](../../releases) | Double-click `index.html` in Chrome/Edge. Imports via standard folder picker and exports a ready-to-extract `.zip` archive. |
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                        HOW TO LAUNCH THE APPLICATION                         │
 ├───────────────────────────────────────┬──────────────────────────────────────┤
-│  MODE 1: Offline / Local (file://)    │  MODE 2: Online / Hosted (https://)  │
+│  MODE 1: Offline / Local              │  MODE 2: Online / Hosted             │
 │  ─────────────────────────────────    │  ──────────────────────────────────  │
-│  1. Download `index.html` to your PC. │  1. Open the GitHub Pages URL (or   │
-│  2. Double-click `index.html` to open │     local `http://localhost` server). │
+│  1. Download `index.html` to your PC. │  1. Open the GitHub Pages URL        │
+│  2. Double-click `index.html` to open │                                      │
 │     it directly in Chrome / Edge.     │  2. Uses File System Access API to   │
 │  3. Imports via standard folder       │     read & write directly into your  │
 │     picker and exports a ready-to-    │     selected folder without ZIPping. │
