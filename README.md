@@ -159,16 +159,7 @@ Before adding new pedestrians to GTA San Andreas, you **must** set up two essent
 1. Open **`fastman92limitAdjuster_GTASA.ini`** inside your `GTA San Andreas\` root directory with Notepad (or any text editor).
 2. Locate each of the three sections below, **remove the leading semicolon (`;`)** on the target lines to activate them, and update their values as shown:
 
-#### 1. Increase IDE Ped Definitions (`[IDE LIMITS]`)
-Find the **`[IDE LIMITS]`** section, remove the semicolon (`;`) on the `IDE:peds section` line, and raise the number from the default **`278`** according to the number of peds you want to add (e.g., `1000`):
-
-```ini
-[IDE LIMITS]
-; Remove the semicolon (;) below and increase the value from the default 278
-IDE:peds section = 1000
-```
-
-#### 2. Raise Killable Model ID Ceiling (`Count of killable model IDs`)
+#### 1. Raise Killable Model ID Ceiling (`Count of killable model IDs`)
 By default, GTA SA sets this to `800` (meaning only IDs `0–799` are valid in `CDarkel::RegisteredKills`). Because **GTA SA Ped Add-On Studio** assigns new peds to IDs **`14000+`**, you **must** raise this limit above your highest Ped ID (e.g., `20000`) so shooting or killing add-on peds in-game does not crash the engine:
 
 ```ini
@@ -181,7 +172,7 @@ By default, GTA SA sets this to `800` (meaning only IDs `0–799` are valid in `
 Count of killable model IDs = 20000
 ```
 
-#### 3. Increase Max Peds Per Group (`[PED STREAMING]`)
+#### 2. Increase Max Peds Per Group (`[PED STREAMING]`)
 Vanilla GTA SA only allows **21 peds per group** in `data/pedgrp.dat`. When merging vanilla `pedgrp.dat` with dozens of add-on peds, groups like `POPCYCLE_GROUP_CASUAL_AVERAGE` or `POPCYCLE_GROUP_SHOPPERS` will exceed 21 entries. Raising this to `100` prevents group overflow crashes and ensures all merged peds spawn properly:
 
 ```ini
