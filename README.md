@@ -91,7 +91,7 @@ Adding brand-new pedestrians to **GTA San Andreas** without overwriting existing
 > **Note on 3D Preview:** All spreadsheet editing, importing, randomization, and exporting work **100% offline**. An active internet connection is only required when clicking the **`👁️` 3D Viewer** button so the browser can fetch `three.js` and `dff-loader` from the CDN.
 
 ---
----
+```
 🛡️ Security & VirusTotal Verification
 
 This tool is a pure client-side static HTML/JavaScript file (`index.html` or 'GTA-SA-Ped-Add-On-Studio.html') with zero backend servers, zero tracking, and zero external data uploads all file reading and ZIP packaging happen locally inside your browser.
