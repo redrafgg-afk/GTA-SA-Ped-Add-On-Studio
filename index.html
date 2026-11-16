@@ -2111,10 +2111,19 @@
         this.rows = [];
         this.rowByUid.clear();
         this.indexByUid.clear();
+        this.pedGroupsMaster = [...DEFAULT_PED_GROUPS];
         this.rawPedGrpExtras.clear();
+        this.rawVanillaIdeText = '';
+        this.rawVanillaPedGrpText = '';
+        this.vanillaPedGrpText = '';
+        this.vanillaIdeFilename = 'ped.ide';
         this.lastCheckedIndex = null;
         this.selectedCount = 0;
         this.pairedCount = 0;
+        this._cachedFilterKey = '';
+        this._cachedFilteredRows = [];
+        this._cachedClashVersion = -1;
+        this._cachedClashSet = new Set();
         this.invalidateFilters();
         this.invalidateClashes();
       }
@@ -2476,9 +2485,17 @@
       showLoading('Importing Directory...', `Scanning /${tree.rootName}...`, 15);
       await yieldFrame();
 
+      // Session isolation: completely clear any remaining pedgrp & state data/templates from the previous session
+      store.clearAll();
+      const vanillaAttachInput = document.getElementById('vanillaPedGrpInput');
+      if (vanillaAttachInput) vanillaAttachInput.value = '';
+      const vanillaAttachStatus = document.getElementById('vanillaPedGrpStatus');
+      if (vanillaAttachStatus) {
+        vanillaAttachStatus.textContent = 'Not attached — pedgrp.dat will only contain your add-on peds. Attach your game\'s original pedgrp.dat to merge new peds without replacing vanilla spawns!';
+        vanillaAttachStatus.style.color = 'var(--text-muted)';
+      }
+
       setEditorMode('addon');
-      store.rawVanillaIdeText = '';
-      store.rawVanillaPedGrpText = '';
       document.getElementById('folderLabel').textContent = `Active Directory: /${tree.rootName}`;
 
       const baseModelMap = buildPairMapFromHandles(tree.gta3RootFiles);
@@ -4990,24 +5007,37 @@
     document.getElementById('btnEmptyVanillaMode').addEventListener('click', openVanillaModeModal);
 
     document.getElementById('btnClearAll').addEventListener('click', () => {
-      if (store.rows.length === 0) return;
+      if (store.rows.length === 0 && store.editorMode === 'addon' && !store.vanillaPedGrpText) return;
       if (!confirm('Clear all rows in the current sheet and return to mode selection?')) return;
+
+      closePedGroupPopover();
+      closePedViewer();
+
       store.clearAll();
-      store.rawVanillaIdeText = '';
-      store.rawVanillaPedGrpText = '';
-      store.vanillaPedGrpText = '';
-      const vanillaInput = document.getElementById('vanillaPedGrpInput');
-      if (vanillaInput) vanillaInput.value = '';
+      pendingVanillaIdeFile = null;
+      pendingVanillaGrpFile = null;
+
+      // Reset semua input file & filter pencarian agar tidak ada state nyangkut
+      const idsToClear = ['vanillaPedGrpInput', 'vanillaModeIdeInput', 'vanillaModeGrpInput', 'searchInput'];
+      for (const elId of idsToClear) {
+        const el = document.getElementById(elId);
+        if (el) el.value = '';
+      }
+      document.getElementById('filterGroup').value = '';
+      document.getElementById('filterFileStatus').value = '';
+
       const vanillaStatus = document.getElementById('vanillaPedGrpStatus');
       if (vanillaStatus) {
         vanillaStatus.textContent = 'Not attached — pedgrp.dat will only contain your add-on peds. Attach your game\'s original pedgrp.dat to merge new peds without replacing vanilla spawns!';
         vanillaStatus.style.color = 'var(--text-muted)';
       }
+
+      refreshPedGroupDropdownFilter();
       setEditorMode('addon');
       document.getElementById('folderLabel').textContent = 'No folder or files selected';
       sheetWrapper.scrollTop = 0;
       viewport.render(true);
-      toast('All sheet data cleared. Select a mode to begin.', 'info');
+      toast('All sheet & session data cleared. Select a mode to begin.', 'info');
     });
 
     // Global Ctrl+F / Cmd+F Shortcut -> Focus Search Input
