@@ -24,6 +24,7 @@
       --danger: #ef4444;
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      --row-height: 31px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -68,6 +69,73 @@
       letter-spacing: 0.5px;
     }
 
+    .mode-pill-badge {
+      background: rgba(59, 130, 246, 0.18);
+      border: 1px solid rgba(59, 130, 246, 0.5);
+      color: #93c5fd;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+    .mode-pill-badge.vanilla {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+      text-align: left;
+      margin-top: 10px;
+    }
+    .mode-card {
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .mode-card h3 {
+      font-size: 13.5px;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+    .mode-card p {
+      font-size: 11.5px !important;
+      color: var(--text-muted);
+      margin-bottom: 0 !important;
+      line-height: 1.45 !important;
+    }
+
+    .limit-warn-box {
+      background: rgba(245, 158, 11, 0.14);
+      border: 1px solid rgba(245, 158, 11, 0.55);
+      border-left: 4px solid var(--warning);
+      color: #fde68a;
+      padding: 9px 11px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+    .limit-warn-box.ok {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.45);
+      border-left-color: var(--success);
+      color: #a7f3d0;
+    }
+    .pill.warn {
+      border-color: rgba(245, 158, 11, 0.6);
+      color: #fcd34d;
+      background: rgba(245, 158, 11, 0.14);
+    }
+
     .brand h1 {
       font-size: 15px;
       font-weight: 700;
@@ -99,7 +167,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.14s ease;
+      transition: background-color 0.14s ease, border-color 0.14s ease;
       white-space: nowrap;
     }
 
@@ -187,6 +255,7 @@
       align-items: center;
       gap: 8px;
       font-size: 11.5px;
+      flex-wrap: wrap;
     }
 
     .pill {
@@ -200,12 +269,14 @@
     .pill.clash { border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; }
     .pill.ok { border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; }
 
-    /* Spreadsheet Container */
+    /* Virtualized Spreadsheet Container (R01 & R11) */
     .sheet-wrapper {
       flex: 1;
       overflow: auto;
+      overflow-anchor: none;
       position: relative;
       background: var(--bg-app);
+      contain: strict;
     }
 
     table.sheet {
@@ -259,15 +330,27 @@
       z-index: 15;
     }
 
-    table.sheet tbody tr:nth-child(even) td { background: var(--bg-row-even); }
-    table.sheet tbody tr:nth-child(odd) td { background: var(--bg-row-odd); }
-    table.sheet tbody tr:hover td { background: var(--bg-row-hover); }
+    /* Logical parity classes for scroll-stable zebra striping in virtualized table (R01/R11) */
+    table.sheet tbody tr.row-even td { background: var(--bg-row-even); }
+    table.sheet tbody tr.row-odd td { background: var(--bg-row-odd); }
+    table.sheet tbody tr:not(.virtual-spacer):hover td { background: var(--bg-row-hover); }
     table.sheet tbody tr.selected td { background: var(--bg-row-selected); }
     table.sheet tbody tr.row-clash td.id-cell,
     table.sheet tbody tr.row-clash td.name-cell,
     table.sheet tbody tr.row-clash td.txd-cell {
       background: rgba(239, 68, 68, 0.22) !important;
       box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.65);
+    }
+
+    table.sheet tbody tr.virtual-spacer,
+    table.sheet tbody tr.virtual-spacer td {
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      pointer-events: none;
+      line-height: 0;
+      font-size: 0;
     }
 
     table.sheet tbody td.name-len-warn {
@@ -280,7 +363,8 @@
       border-bottom: 1px solid var(--border);
       border-right: 1px solid var(--border);
       vertical-align: middle;
-      height: 31px;
+      height: var(--row-height);
+      max-height: var(--row-height);
     }
 
     .cell-chk {
@@ -328,6 +412,43 @@
     .cell-input:focus, .cell-select:focus {
       background: #0d121a;
       border-color: var(--border-focus);
+    }
+
+    /* Lazy-Hydrated Dropdown Placeholder Cell (R02) */
+    .cell-lazy-select {
+      width: 100%;
+      height: 30px;
+      padding: 0 7px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      color: var(--text-main);
+      font-size: 12px;
+      user-select: none;
+      overflow: hidden;
+    }
+    .cell-lazy-select.mono {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+    }
+    .cell-lazy-select:hover, .cell-lazy-select:focus {
+      background: #0d121a;
+      border-color: var(--border-focus);
+      outline: none;
+    }
+    .lazy-sel-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .lazy-sel-arrow {
+      font-size: 9px;
+      color: var(--text-muted);
+      flex-shrink: 0;
     }
 
     /* Ped Name Cell with Quick Action Trigger */
@@ -486,6 +607,7 @@
       padding: 24px;
       color: var(--text-muted);
       pointer-events: none;
+      z-index: 16;
     }
     .empty-card {
       pointer-events: auto;
@@ -518,7 +640,7 @@
       overflow-x: auto;
     }
 
-    /* Modals & Floating 3D Viewer Window (Screen-Scale Aware) */
+    /* Modals & Floating 3D Viewer Window */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -618,11 +740,6 @@
       font-size: 12.5px;
     }
 
-    .chk-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-    }
     .chk-item {
       display: flex;
       align-items: center;
@@ -739,7 +856,7 @@
       font-family: var(--font-mono);
       cursor: pointer;
       user-select: none;
-      transition: all 0.12s ease;
+      transition: background-color 0.12s ease, border-color 0.12s ease;
     }
     .bl-chip:hover {
       border-color: var(--accent);
@@ -751,7 +868,7 @@
       text-decoration: line-through;
     }
 
-    /* Simple Loading & Progress Overlay */
+    /* Loading & Progress Overlay */
     .loading-backdrop {
       position: fixed;
       inset: 0;
@@ -795,7 +912,7 @@
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, var(--accent), var(--success));
-      transition: width 0.12s ease;
+      transition: width 0.1s ease;
     }
   </style>
   <script type="importmap">
@@ -818,8 +935,11 @@
     <div class="brand">
       <div class="brand-badge">GTA SA</div>
       <div>
-        <h1>Ped Add-On Studio</h1>
-        <span id="folderLabel">No folder selected (Supports local file:// & GitHub Pages)</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <h1>Ped Studio</h1>
+          <span class="mode-pill-badge" id="activeModeBadge">ADD-ON MODE</span>
+        </div>
+        <span id="folderLabel">No folder or files selected</span>
       </div>
     </div>
 
@@ -827,13 +947,16 @@
       <button id="btnImportFolder" class="btn-primary" title="Select root folder containing data/, models/gta3/, and optional Add/">
         📂 Import Folder
       </button>
+      <button id="btnOpenVanillaModal" title="Load vanilla ped.ide and pedgrp.dat one by one (No DFF/TXD)">
+        🛠️ Load Vanilla IDE+GRP
+      </button>
       <button id="btnAddRow" title="Add a new ped row at the bottom">
         ➕ Add Row
       </button>
       <button id="btnAutoRename" class="btn-warning" title="Auto-rename IDs & DFF/TXD files sequentially from top to bottom (14000+)">
         🔢 Auto-Rename (14000+)
       </button>
-      <button id="btnCheckClash" title="Check & fix ID clashes, duplicate names, or vanilla GTA SA ped names">
+      <button id="btnCheckClash" title="Check & fix ID clashes or duplicate names">
         🛡️ Check & Fix Clashes
       </button>
       <button id="btnCopyFromPed" disabled title="Select one or more peds to copy properties from a reference ped">
@@ -842,10 +965,10 @@
       <button id="btnRandomizeSelected" disabled title="Randomize selected parameter segments for checked peds">
         🎲 Randomize Selected (<span id="randCountLabel">0</span>)
       </button>
-      <button id="btnClearAll" class="btn-danger" title="Clear entire table and reset">
+      <button id="btnClearAll" class="btn-danger" title="Clear entire table and return to mode selection">
         🗑️ Clear All
       </button>
-      <button id="btnExportFolder" class="btn-success" title="Export peds_addons.ide, pedgrp.dat, loader.txt & synced DFF/TXD files">
+      <button id="btnExportFolder" class="btn-success" title="Export modified files">
         💾 Export Output
       </button>
     </div>
@@ -868,12 +991,13 @@
 
     <div class="stats-pills">
       <span class="pill">Total Peds: <strong id="statTotal">0</strong></span>
-      <span class="pill">Paired DFF+TXD: <strong id="statPaired">0</strong></span>
+      <span class="pill" id="statPairedPill">Paired DFF+TXD: <strong id="statPaired">0</strong></span>
+      <span class="pill ok" id="statMaxGrpPill" title="Highest number of peds in any single pedgrp.dat line">Max Peds/Grp: <strong id="statMaxGrp">0</strong></span>
       <span class="pill ok" id="statClashPill">Clashes: <strong id="statClashes">0</strong></span>
     </div>
   </div>
 
-  <!-- MAIN SPREADSHEET -->
+  <!-- MAIN VIRTUALIZED SPREADSHEET -->
   <main class="sheet-wrapper" id="sheetWrapper">
     <table class="sheet" id="pedTable">
       <thead>
@@ -902,24 +1026,42 @@
     </table>
 
     <div class="empty-state" id="emptyState">
-      <div class="empty-card">
-        <h2>GTA SA Ped Add-On Workbench</h2>
+      <div class="empty-card" style="max-width: 680px;">
+        <h2>GTA SA Ped Workbench — Select Editing Mode</h2>
         <p>
-          Click <strong>Import Folder</strong> to select your mod directory (works both when opened locally via <code>file://</code> and hosted on GitHub Pages). Supports <strong>Merge Mode</strong> from numbered subfolders (<code>data/1</code>, <code>data/2</code>, ...) and automatic conversion of loose skins from <code>Add/</code>.
+          Choose whether you are building <strong>Add-On Peds (14000+)</strong> with 3D DFF/TXD models or directly editing <strong>Vanilla / Original Game Peds</strong> via <code>ped.ide</code> and <code>pedgrp.dat</code>.
         </p>
-        <pre>Root_Folder/
-├── data/          (peds_addons.ide, pedgrp.dat, loader.txt, or folders 1/, 2/...)
-├── models/gta3/   (paired .dff and .txd files)
-└── Add/           (optional: loose .dff & .txd skins -> auto-assigned numeric IDs)</pre>
-        <div style="display:flex; gap:8px; justify-content:center;">
-          <button id="btnEmptyImport" class="btn-primary">📂 Select Root Folder</button>
-          <button id="btnEmptyNew">➕ Start Empty Sheet</button>
+        <div class="mode-grid">
+          <div class="mode-card">
+            <div>
+              <h3>📦 Mode 1: Add-On Ped Studio</h3>
+              <p>
+                Import a root folder containing <code>data/</code>, <code>models/gta3/</code>, and optional <code>Add/</code> skins. Includes 3D DFF/TXD preview and exports synchronized add-on files.
+              </p>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button id="btnEmptyImport" class="btn-primary">📂 Select Add-On Folder</button>
+              <button id="btnEmptyNew">➕ Empty Add-On Sheet</button>
+            </div>
+          </div>
+
+          <div class="mode-card" style="border-color: rgba(16, 185, 129, 0.45);">
+            <div>
+              <h3>🛠️ Mode 2: Vanilla Ped Editor (IDE + GRP)</h3>
+              <p>
+                Load your game's <code>ped.ide</code> and <code>pedgrp.dat</code> one by one to edit original ped parameters directly. 3D preview is disabled (no DFF/TXD loaded). Exports both modified files directly into your target folder.
+              </p>
+            </div>
+            <div>
+              <button id="btnEmptyVanillaMode" class="btn-success">📄 Load ped.ide &amp; pedgrp.dat</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- MODAL: COPY DATA FROM ANOTHER PED (13 INDEPENDENT TOGGLES) -->
+  <!-- MODAL: COPY DATA FROM ANOTHER PED -->
   <div class="modal-backdrop" id="modalCopyPed">
     <div class="modal-box" style="width: min(94vw, 540px);">
       <div class="modal-header">
@@ -963,7 +1105,7 @@
     </div>
   </div>
 
-  <!-- MODAL: RANDOMIZE SELECTED PEDS (13 INDEPENDENT TOGGLES + BLACKLIST) -->
+  <!-- MODAL: RANDOMIZE SELECTED PEDS -->
   <div class="modal-backdrop" id="modalRandomizePed">
     <div class="modal-box" style="width: min(94vw, 560px);">
       <div class="modal-header">
@@ -1008,6 +1150,15 @@
             <label class="chk-item"><input type="checkbox" id="rnd-voice2" checked /> Voice 2</label>
             <label class="chk-item"><input type="checkbox" id="rnd-pedGroup" checked /> Ped Group</label>
           </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:4px; background:var(--bg-app); border:1px solid var(--border); padding:6px 9px; border-radius:6px; font-size:11.5px;">
+            <span style="color:var(--text-muted); font-weight:600;">🎲 Ped Group Count per Ped (Individual):</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <label for="randPedGrpMin" style="color:var(--text-muted);">Min:</label>
+              <input type="number" id="randPedGrpMin" value="1" min="0" max="20" style="width:54px; padding:3px 6px; font-family:var(--font-mono);" />
+              <label for="randPedGrpMax" style="color:var(--text-muted);">Max:</label>
+              <input type="number" id="randPedGrpMax" value="3" min="0" max="20" style="width:54px; padding:3px 6px; font-family:var(--font-mono);" />
+            </div>
+          </div>
         </div>
 
         <!-- RANDOMIZATION BLACKLIST UI -->
@@ -1038,25 +1189,61 @@
     </div>
   </div>
 
-  <!-- MODAL: EXPORT OPTIONS (OPTIONAL VANILLA PEDGRP.DAT MERGE) -->
-  <div class="modal-backdrop" id="modalExportOptions">
-    <div class="modal-box">
+  <!-- MODAL: VANILLA MODE (LOAD ped.ide & pedgrp.dat ONE BY ONE) -->
+  <div class="modal-backdrop" id="modalVanillaImport">
+    <div class="modal-box" style="width: min(94vw, 500px);">
       <div class="modal-header">
-        <h3>💾 Export Add-On Output</h3>
-        <button class="btn-close-x" data-close="modalExportOptions" title="Close">✕</button>
+        <h3>🛠️ Vanilla Ped Editor — Load Base Game Files</h3>
+        <button class="btn-close-x" data-close="modalVanillaImport" title="Close">✕</button>
       </div>
       <div class="modal-body">
+        <p style="font-size:12px; color:var(--text-muted); line-height:1.5;">
+          Select your game's <code>ped.ide</code> (or <code>peds.ide</code>) and <code>pedgrp.dat</code> files one by one. 3D preview is disabled in this mode because DFF/TXD meshes are not loaded.
+        </p>
         <div class="form-row">
-          <label>Original GTA SA <code>data/pedgrp.dat</code> (Optional — Recommended):</label>
-          <input type="file" id="vanillaPedGrpInput" accept=".dat,.txt" />
-          <span id="vanillaPedGrpStatus" style="font-size:11px; color:var(--text-muted);">
-            Not attached — <code>pedgrp.dat</code> will only contain your add-on peds. Attach your game's original <code>pedgrp.dat</code> to append new peds without replacing vanilla spawns!
-          </span>
+          <label>Step 1 — Select <code>ped.ide</code> / <code>peds.ide</code> (Required):</label>
+          <input type="file" id="vanillaModeIdeInput" accept=".ide,.txt" />
+          <span id="vanillaModeIdeStatus" style="font-size:11px; color:var(--text-muted);">Waiting for ped.ide...</span>
+        </div>
+        <div class="form-row">
+          <label>Step 2 — Select <code>pedgrp.dat</code> (Required):</label>
+          <input type="file" id="vanillaModeGrpInput" accept=".dat,.txt" />
+          <span id="vanillaModeGrpStatus" style="font-size:11px; color:var(--text-muted);">Waiting for pedgrp.dat...</span>
         </div>
       </div>
       <div class="modal-footer">
+        <button data-close="modalVanillaImport">Cancel</button>
+        <button id="btnConfirmVanillaImport" class="btn-success" disabled>Load into Editor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EXPORT OPTIONS -->
+  <div class="modal-backdrop" id="modalExportOptions">
+    <div class="modal-box" style="width: min(94vw, 540px);">
+      <div class="modal-header">
+        <h3 id="exportModalTitle">💾 Export Add-On Output</h3>
+        <button class="btn-close-x" data-close="modalExportOptions" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row" id="addonVanillaAttachRow">
+          <label>Original GTA SA <code>data/pedgrp.dat</code> (Optional — Recommended for Merge):</label>
+          <input type="file" id="vanillaPedGrpInput" accept=".dat,.txt" />
+          <span id="vanillaPedGrpStatus" style="font-size:11px; color:var(--text-muted);">
+            Not attached — <code>pedgrp.dat</code> will only contain your add-on peds. Attach your game's original <code>pedgrp.dat</code> to merge new peds without replacing vanilla spawns!
+          </span>
+        </div>
+
+        <div id="vanillaModeExportNote" style="display:none; font-size:12px; color:#cbd5e1; line-height:1.5;">
+          Choose the destination folder in the next prompt — both modified <code id="vanillaExportIdeName">ped.ide</code> and <code>pedgrp.dat</code> will be dropped directly into that folder.
+        </div>
+
+        <!-- MERGED PEDGRP.DAT PEAK PED COUNT & FASTMAN92 LIMIT ADJUSTER WARNING -->
+        <div id="pedGrpLimitReport" class="limit-warn-box"></div>
+      </div>
+      <div class="modal-footer">
         <button data-close="modalExportOptions">Cancel</button>
-        <button id="btnConfirmExport" class="btn-success">Start Export</button>
+        <button id="btnConfirmExport" class="btn-success">Choose Folder &amp; Export</button>
       </div>
     </div>
   </div>
@@ -1104,7 +1291,7 @@
     </div>
   </div>
 
-  <!-- FLOATING WINDOW: 3D PED VIEWER (SCALE-AWARE, STRIPPED, ZERO MEMORY LEAK) -->
+  <!-- FLOATING WINDOW: 3D PED VIEWER -->
   <div class="modal-backdrop" id="modalViewer">
     <div class="viewer-window" id="viewerWindow">
       <div class="modal-header">
@@ -1196,12 +1383,10 @@
     ];
 
     const CAR_MASK_PRESETS = [
-      // General & All Vehicles
       { v: '1FFF', label: '1FFF — All Vehicles + Pedestrians' },
       { v: '0FFF', label: '0FFF — All Vehicles (No Walking)' },
       { v: '1000', label: '1000 — Pedestrians Only (Walking)' },
       { v: '0000', label: '0000 — Disabled (Never Spawns)' },
-      // Cars (By Class)
       { v: '100F', label: '100F — All Cars + Pedestrians' },
       { v: '000F', label: '000F — All Cars (No Walking)' },
       { v: '1001', label: '1001 — Normal Cars + Pedestrians' },
@@ -1211,7 +1396,6 @@
       { v: '1003', label: '1003 — Normal & Cheap Cars + Walking' },
       { v: '100C', label: '100C — Luxury & Sports Cars + Walking' },
       { v: '1007', label: '1007 — All Non-Sports Cars + Walking' },
-      // Two-Wheelers (Motorcycles & Bicycles)
       { v: '1980', label: '1980 — All Bikes, Mopeds & Bicycles + Walking' },
       { v: '1180', label: '1180 — Motorcycles & Mopeds + Walking' },
       { v: '1100', label: '1100 — Heavy / Sport Motorcycles + Walking' },
@@ -1219,7 +1403,6 @@
       { v: '1800', label: '1800 — Bicycles Only + Walking' },
       { v: '0100', label: '0100 — Motorcycles Only (No Walking)' },
       { v: '0800', label: '0800 — Bicycles Only (No Walking)' },
-      // Car & Two-Wheeler Combinations
       { v: '198F', label: '198F — All Cars, Bikes & Bicycles + Walking' },
       { v: '118F', label: '118F — All Cars, Bikes & Mopeds + Walking' },
       { v: '110F', label: '110F — All Cars & Heavy Bikes + Walking' },
@@ -1227,7 +1410,6 @@
       { v: '1983', label: '1983 — Standard Cars, Bikes & Bicycles + Walking' },
       { v: '1803', label: '1803 — Standard Cars & Bicycles + Walking' },
       { v: '1901', label: '1901 — Normal Cars, Bikes & Bicycles + Walking' },
-      // Workers, Trucks & Taxis
       { v: '1070', label: '1070 — Workers, Trucks & Taxis + Walking' },
       { v: '1030', label: '1030 — Worker Vehicles & Trucks + Walking' },
       { v: '1010', label: '1010 — Worker Vehicles / Pickups + Walking' },
@@ -1237,7 +1419,6 @@
       { v: '0040', label: '0040 — Taxis Only (No Walking)' },
       { v: '1013', label: '1013 — Rural / Country Folk (Pickups, Cheap Cars)' },
       { v: '1033', label: '1033 — Field Workers & Standard Cars' },
-      // Boats & Coastal
       { v: '1600', label: '1600 — All Boats + Pedestrians' },
       { v: '1200', label: '1200 — Yachts / Speedboats + Walking' },
       { v: '1400', label: '1400 — Fishing / Work Boats + Walking' },
@@ -1495,15 +1676,113 @@
 
     const DEFAULT_PED_GROUPS = [
       'NONE',
-      'POPCYCLE_GROUP_WORKERS', 'POPCYCLE_GROUP_BUSINESS', 'POPCYCLE_GROUP_CLUBBERS',
-      'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_BEACHFOLK', 'POPCYCLE_GROUP_PARKFOLK',
-      'POPCYCLE_GROUP_CASUAL_RICH', 'POPCYCLE_GROUP_CASUAL_AVERAGE', 'POPCYCLE_GROUP_CASUAL_POOR',
-      'POPCYCLE_GROUP_PROSTITUTES', 'POPCYCLE_GROUP_CRIMINALS', 'POPCYCLE_GROUP_GOLFERS',
-      'POPCYCLE_GROUP_SERVANTS', 'POPCYCLE_GROUP_AIRPORT', 'POPCYCLE_GROUP_SHOPPERS',
-      'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_DESERTFOLK', 'POPCYCLE_GROUP_AIRCREW',
-      'GANG1', 'GANG2', 'GANG3', 'GANG4', 'GANG5', 'GANG6', 'GANG7', 'GANG8', 'GANG9', 'GANG10',
-      'DEALERS', 'MEDIC', 'FIREMAN', 'COPS', 'SPECIAL'
+      'POPCYCLE_GROUP_WORKERS',
+      'POPCYCLE_GROUP_WORKERS (SF)',
+      'POPCYCLE_GROUP_WORKERS (VEGAS)',
+      'POPCYCLE_GROUP_BUSINESS',
+      'POPCYCLE_GROUP_BUSINESS (SF)',
+      'POPCYCLE_GROUP_BUSINESS (VEGAS)',
+      'POPCYCLE_GROUP_CLUBBERS',
+      'POPCYCLE_GROUP_CLUBBERS (SF)',
+      'POPCYCLE_GROUP_CLUBBERS (VEGAS)',
+      'POPCYCLE_GROUP_FARMERS',
+      'POPCYCLE_GROUP_BEACHFOLK',
+      'POPCYCLE_GROUP_PARKFOLK',
+      'POPCYCLE_GROUP_PARKFOLK (SF)',
+      'POPCYCLE_GROUP_PARKFOLK (VEGAS)',
+      'POPCYCLE_GROUP_CASUAL_RICH',
+      'POPCYCLE_GROUP_CASUAL_RICH (SF)',
+      'POPCYCLE_GROUP_CASUAL_RICH (VEGAS)',
+      'POPCYCLE_GROUP_CASUAL_AVERAGE',
+      'POPCYCLE_GROUP_CASUAL_AVERAGE (SF)',
+      'POPCYCLE_GROUP_CASUAL_AVERAGE (VEGAS)',
+      'POPCYCLE_GROUP_CASUAL_POOR',
+      'POPCYCLE_GROUP_CASUAL_POOR (SF)',
+      'POPCYCLE_GROUP_CASUAL_POOR (VEGAS)',
+      'POPCYCLE_GROUP_PROSTITUTES',
+      'POPCYCLE_GROUP_PROSTITUTES (SF)',
+      'POPCYCLE_GROUP_PROSTITUTES (VEGAS)',
+      'POPCYCLE_GROUP_CRIMINALS',
+      'POPCYCLE_GROUP_CRIMINALS (SF)',
+      'POPCYCLE_GROUP_CRIMINALS (VEGAS)',
+      'POPCYCLE_GROUP_GOLFERS',
+      'POPCYCLE_GROUP_SERVANTS',
+      'POPCYCLE_GROUP_AIRCREW',
+      'POPCYCLE_GROUP_ENTERTAINERS',
+      'POPCYCLE_GROUP_OUT_OF_TOWN_FACTORY_WORKERS',
+      'POPCYCLE_GROUP_DESERT_FOLK',
+      'POPCYCLE_GROUP_AIRCREW_RUNWAY',
+      'Gang 1 (BALLAS - Rival Black Gang - AKA FLATS)',
+      'Gang 2 (THE FAMILIES - PLAYER GANG - AKA GROVE)',
+      'Gang 3 ( Los Santos Vagos - AKA Northside Mexicans)',
+      'Gang 4  (San Fiero Rifa - proper models: SFR1, SFR2, SFR3)',
+      'Gang 5 (Da Nang Boys  - AKA Vietnamese)',
+      'Gang 6 (ITALIAN MAFIA)',
+      'Gang 7 (TRIADS)',
+      'Gang 8  (Varrio Los Aztecas - AKA SOUTH SIDE MEXICAN)',
+      'Gang 9  (UNUSED)',
+      'Gang 10  (UNUSED)',
+      'Dealers',
+      'Shopkeepers',
+      'Office workers',
+      'Husbands',
+      'Wives'
     ];
+
+    const GANG_PED_GROUPS_BY_NUM = {
+      1: 'Gang 1 (BALLAS - Rival Black Gang - AKA FLATS)',
+      2: 'Gang 2 (THE FAMILIES - PLAYER GANG - AKA GROVE)',
+      3: 'Gang 3 ( Los Santos Vagos - AKA Northside Mexicans)',
+      4: 'Gang 4  (San Fiero Rifa - proper models: SFR1, SFR2, SFR3)',
+      5: 'Gang 5 (Da Nang Boys  - AKA Vietnamese)',
+      6: 'Gang 6 (ITALIAN MAFIA)',
+      7: 'Gang 7 (TRIADS)',
+      8: 'Gang 8  (Varrio Los Aztecas - AKA SOUTH SIDE MEXICAN)',
+      9: 'Gang 9  (UNUSED)',
+      10: 'Gang 10  (UNUSED)'
+    };
+
+    const CANONICAL_GROUP_LOOKUP = (() => {
+      const map = new Map();
+      for (const g of DEFAULT_PED_GROUPS) {
+        if (g === 'NONE') continue;
+        map.set(g.toLowerCase(), g);
+        map.set(g.replace(/\s+/g, ' ').trim().toLowerCase(), g);
+      }
+      // Map legacy/short aliases to canonical pedgrp.dat names so duplicates never appear
+      for (let i = 1; i <= 10; i++) {
+        map.set(`gang${i}`, GANG_PED_GROUPS_BY_NUM[i]);
+        map.set(`gang ${i}`, GANG_PED_GROUPS_BY_NUM[i]);
+      }
+      map.set('dealers', 'Dealers');
+      map.set('shopkeepers', 'Shopkeepers');
+      map.set('office workers', 'Office workers');
+      map.set('husbands', 'Husbands');
+      map.set('wives', 'Wives');
+      map.set('popcycle_group_desertfolk', 'POPCYCLE_GROUP_DESERT_FOLK');
+      return map;
+    })();
+
+    // Groups that do NOT exist in GTA SA's pedgrp.dat
+    const NON_PEDGRP_INVALID_GROUPS = new Set(['cops', 'medic', 'fireman', 'special']);
+
+    function normalizePedGroupName(rawName) {
+      const trimmed = String(rawName || '').trim();
+      if (!trimmed) return null;
+      const collapsed = trimmed.replace(/\s+/g, ' ').toLowerCase();
+      if (NON_PEDGRP_INVALID_GROUPS.has(collapsed)) return null;
+      if (CANONICAL_GROUP_LOOKUP.has(trimmed.toLowerCase())) {
+        return CANONICAL_GROUP_LOOKUP.get(trimmed.toLowerCase());
+      }
+      if (CANONICAL_GROUP_LOOKUP.has(collapsed)) {
+        return CANONICAL_GROUP_LOOKUP.get(collapsed);
+      }
+      const gangPrefixMatch = collapsed.match(/^gang\s*([1-9]|10)\b/);
+      if (gangPrefixMatch) {
+        return GANG_PED_GROUPS_BY_NUM[Number(gangPrefixMatch[1])];
+      }
+      return trimmed;
+    }
 
     const VANILLA_PED_NAMES = new Set([
       'male01','bfori','bfost','vbfycrp','bfyri','bfyst','bmost','bmotr1','bmyri','bmyst','wmomib','bmypol1','bmypol2',
@@ -1533,30 +1812,61 @@
     ]);
 
     // =========================================================================
-    // 2. APPLICATION STATE & VIRTUAL FILE ABSTRACTION
+    // 2. BACKGROUND-SAFE SCHEDULER & PARALLEL I/O RUNNER
     // =========================================================================
-    const state = {
-      rows: [],
-      pedGroupsMaster: [...DEFAULT_PED_GROUPS],
-      rawPedGrpExtras: new Map(),
-      lastCheckedIndex: null,
-      activeViewer: null,
-      vanillaPedGrpText: '',
-      randomBlacklist: {
-        pedtype: new Set(),
-        stat: new Set(),
-        animGroup: new Set(),
-        carsMask: new Set(['0FFF', '000F', '0100', '0800', '0020', '0040', '0600', '0000']),
-        flags: new Set(),
-        animFile: new Set(),
-        radio: new Set(),
-        audioType: new Set(),
-        voice: new Set(),
-        pedGroup: new Set(['NONE'])
+    const yieldFrame = () => new Promise(resolve => {
+      if (typeof MessageChannel !== 'undefined') {
+        const ch = new MessageChannel();
+        ch.port1.onmessage = () => resolve();
+        ch.port2.postMessage(null);
+      } else {
+        setTimeout(resolve, 0);
       }
-    };
+    });
 
-    const nextFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+    async function runChunkedTask(items, workerFn, { frameBudgetMs = 20, onProgress = null } = {}) {
+      const total = items.length;
+      if (total === 0) return;
+      let sliceStart = performance.now();
+      for (let i = 0; i < total; i++) {
+        await workerFn(items[i], i);
+        if (performance.now() - sliceStart >= frameBudgetMs) {
+          if (onProgress && !document.hidden) onProgress(i + 1, total);
+          await yieldFrame();
+          sliceStart = performance.now();
+        }
+      }
+      if (onProgress) onProgress(total, total);
+    }
+
+    async function runParallelTask(items, workerFn, { concurrency = 12, onProgress = null } = {}) {
+      const total = items.length;
+      if (total === 0) return;
+      let nextIdx = 0;
+      let completed = 0;
+      let lastUiUpdate = performance.now();
+
+      const worker = async () => {
+        while (true) {
+          const i = nextIdx++;
+          if (i >= total) break;
+          await workerFn(items[i], i);
+          completed++;
+          const now = performance.now();
+          if (onProgress && !document.hidden && (now - lastUiUpdate >= 60)) {
+            lastUiUpdate = now;
+            onProgress(completed, total);
+            await yieldFrame();
+          }
+        }
+      };
+
+      const poolSize = Math.min(concurrency, total);
+      const workers = new Array(poolSize);
+      for (let w = 0; w < poolSize; w++) workers[w] = worker();
+      await Promise.all(workers);
+      if (onProgress) onProgress(total, total);
+    }
 
     function showLoading(title, sub = 'Please wait...', pct = 0) {
       document.getElementById('loadingTitle').textContent = title;
@@ -1585,16 +1895,16 @@
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
-    // Wrap either a FileSystemFileHandle (HTTPS) or a DOM File (file:// webkitdirectory)
     function wrapNativeFile(fileObj) {
       return {
         name: fileObj.name,
+        size: fileObj.size || 0,
         getFile: async () => fileObj
       };
     }
 
     function createDefaultPed(overrides = {}) {
-      return {
+      const ped = {
         uid: nextUid(),
         id: 14000,
         modelName: '14000',
@@ -1615,12 +1925,318 @@
         txdHandle: null,
         sourceTag: 'Manual',
         selected: false,
+        _searchIndex: '',
         ...overrides
       };
+      rebuildRowSearchIndex(ped);
+      return ped;
+    }
+
+    function rebuildRowSearchIndex(r) {
+      r._searchIndex = `${r.id} ${r.modelName} ${r.txdName} ${r.pedtype} ${r.stat} ${r.animGroup} ${r.carsMask} ${r.voice1} ${r.voice2} ${(r.pedGroups || []).join(' ')} ${r.sourceTag}`.toLowerCase();
     }
 
     // =========================================================================
-    // 3. TOAST & MODAL HELPERS
+    // 3. CENTRALIZED DATA STORE WITH O(1) UID MAP & CACHED QUERIES (R06, R07, R08, R12)
+    // =========================================================================
+    class PedStore {
+      constructor() {
+        this.editorMode = 'addon'; // 'addon' | 'vanilla'
+        this.vanillaIdeFilename = 'ped.ide';
+        this.rawVanillaIdeText = '';
+        this.rawVanillaPedGrpText = '';
+        this.rows = [];
+        this.rowByUid = new Map();
+        this.indexByUid = new Map();
+        this.pedGroupsMaster = [...DEFAULT_PED_GROUPS];
+        this.rawPedGrpExtras = new Map();
+        this.lastCheckedIndex = null;
+        this.activeViewer = null;
+        this.vanillaPedGrpText = '';
+        this.randomBlacklist = {
+          pedtype: new Set(),
+          stat: new Set(),
+          animGroup: new Set(),
+          carsMask: new Set(['0FFF', '000F', '0100', '0800', '0020', '0040', '0600', '0000']),
+          flags: new Set(),
+          animFile: new Set(),
+          radio: new Set(),
+          audioType: new Set(),
+          voice: new Set(),
+          pedGroup: new Set(['NONE'])
+        };
+
+        this.selectedCount = 0;
+        this.pairedCount = 0;
+
+        this.filterVersion = 1;
+        this.clashVersion = 1;
+        this._cachedFilterKey = '';
+        this._cachedFilteredRows = [];
+        this._cachedClashVersion = -1;
+        this._cachedClashSet = new Set();
+      }
+
+      getByUid(uid) {
+        return this.rowByUid.get(uid) || null;
+      }
+
+      getIndexByUid(uid) {
+        const idx = this.indexByUid.get(uid);
+        return idx === undefined ? -1 : idx;
+      }
+
+      invalidateFilters() {
+        this.filterVersion++;
+      }
+
+      invalidateClashes() {
+        this.clashVersion++;
+      }
+
+      rebuildIndicesAndCounters() {
+        this.rowByUid.clear();
+        this.indexByUid.clear();
+        let sel = 0;
+        let paired = 0;
+        for (let i = 0; i < this.rows.length; i++) {
+          const r = this.rows[i];
+          this.rowByUid.set(r.uid, r);
+          this.indexByUid.set(r.uid, i);
+          if (r.selected) sel++;
+          if (r.dffHandle && r.txdHandle) paired++;
+        }
+        this.selectedCount = sel;
+        this.pairedCount = paired;
+        this.invalidateFilters();
+        this.invalidateClashes();
+      }
+
+      setRows(newRows) {
+        this.rows = newRows;
+        this.lastCheckedIndex = null;
+        this.rebuildIndicesAndCounters();
+      }
+
+      addRow(row) {
+        const idx = this.rows.length;
+        this.rows.push(row);
+        this.rowByUid.set(row.uid, row);
+        this.indexByUid.set(row.uid, idx);
+        if (row.selected) this.selectedCount++;
+        if (row.dffHandle && row.txdHandle) this.pairedCount++;
+        this.invalidateFilters();
+        this.invalidateClashes();
+      }
+
+      deleteRowShiftUp(uid) {
+        const idx = this.getIndexByUid(uid);
+        if (idx === -1) return false;
+
+        const removed = this.rows[idx];
+        const deletedId = removed.id;
+        if (removed.selected) this.selectedCount--;
+        if (removed.dffHandle && removed.txdHandle) this.pairedCount--;
+
+        this.rows.splice(idx, 1);
+        this.rowByUid.delete(uid);
+        this.indexByUid.delete(uid);
+
+        for (let i = idx; i < this.rows.length; i++) {
+          const row = this.rows[i];
+          if (this.editorMode === 'addon') {
+            const prevIdStr = String(row.id);
+            const newId = deletedId + (i - idx);
+            row.id = newId;
+            if (row.modelName === prevIdStr) row.modelName = String(newId);
+            if (row.txdName === prevIdStr) row.txdName = String(newId);
+          }
+          this.indexByUid.set(row.uid, i);
+          rebuildRowSearchIndex(row);
+        }
+
+        this.lastCheckedIndex = null;
+        this.invalidateFilters();
+        this.invalidateClashes();
+        return true;
+      }
+
+      updateField(uid, field, value) {
+        const row = this.getByUid(uid);
+        if (!row) return null;
+        row[field] = value;
+        rebuildRowSearchIndex(row);
+        this.invalidateFilters();
+        if (field === 'id' || field === 'modelName' || field === 'txdName') {
+          this.invalidateClashes();
+        }
+        return row;
+      }
+
+      setRowSelected(uid, checked) {
+        const row = this.getByUid(uid);
+        if (!row || row.selected === checked) return false;
+        row.selected = checked;
+        this.selectedCount += checked ? 1 : -1;
+        return true;
+      }
+
+      setFilteredSelection(checked) {
+        const filtered = this.getFilteredRows();
+        for (let i = 0; i < filtered.length; i++) {
+          const r = filtered[i];
+          if (r.selected !== checked) {
+            r.selected = checked;
+            this.selectedCount += checked ? 1 : -1;
+          }
+        }
+        return filtered;
+      }
+
+      setFilteredRangeSelection(startIdx, endIdx, checked) {
+        const filtered = this.getFilteredRows();
+        const lo = Math.max(0, Math.min(startIdx, endIdx));
+        const hi = Math.min(filtered.length - 1, Math.max(startIdx, endIdx));
+        for (let i = lo; i <= hi; i++) {
+          const r = filtered[i];
+          if (r.selected !== checked) {
+            r.selected = checked;
+            this.selectedCount += checked ? 1 : -1;
+          }
+        }
+        return { lo, hi, filtered };
+      }
+
+      clearAll() {
+        this.rows = [];
+        this.rowByUid.clear();
+        this.indexByUid.clear();
+        this.rawPedGrpExtras.clear();
+        this.lastCheckedIndex = null;
+        this.selectedCount = 0;
+        this.pairedCount = 0;
+        this.invalidateFilters();
+        this.invalidateClashes();
+      }
+
+      getFilteredRows() {
+        const q = document.getElementById('searchInput').value.trim().toLowerCase();
+        const grp = document.getElementById('filterGroup').value;
+        const fStat = document.getElementById('filterFileStatus').value;
+        const filterKey = `${q}\x00${grp}\x00${fStat}\x00${this.filterVersion}`;
+
+        if (filterKey === this._cachedFilterKey) {
+          return this._cachedFilteredRows;
+        }
+
+        if (!q && !grp && !fStat) {
+          this._cachedFilterKey = filterKey;
+          this._cachedFilteredRows = this.rows;
+          return this._cachedFilteredRows;
+        }
+
+        const out = [];
+        for (let i = 0; i < this.rows.length; i++) {
+          const r = this.rows[i];
+          if (grp) {
+            if (grp === 'NONE' && r.pedGroups.length > 0) continue;
+            if (grp !== 'NONE' && !r.pedGroups.includes(grp)) continue;
+          }
+          if (fStat) {
+            const hasBoth = Boolean(r.dffHandle && r.txdHandle);
+            const hasAny = Boolean(r.dffHandle || r.txdHandle);
+            if (fStat === 'both' && !hasBoth) continue;
+            if (fStat === 'partial' && (hasBoth || !hasAny)) continue;
+            if (fStat === 'none' && hasAny) continue;
+          }
+          if (q && !r._searchIndex.includes(q)) continue;
+          out.push(r);
+        }
+
+        this._cachedFilterKey = filterKey;
+        this._cachedFilteredRows = out;
+        return out;
+      }
+
+      getClashSet() {
+        if (this._cachedClashVersion === this.clashVersion) {
+          return this._cachedClashSet;
+        }
+
+        const idCounts = new Map();
+        const nameCounts = new Map();
+        const txdCounts = new Map();
+
+        for (let i = 0; i < this.rows.length; i++) {
+          const r = this.rows[i];
+          idCounts.set(r.id, (idCounts.get(r.id) || 0) + 1);
+          const low = r.modelName.trim().toLowerCase();
+          const txdLow = r.txdName.trim().toLowerCase();
+          nameCounts.set(low, (nameCounts.get(low) || 0) + 1);
+          txdCounts.set(txdLow, (txdCounts.get(txdLow) || 0) + 1);
+        }
+
+        const isVanilla = this.editorMode === 'vanilla';
+        const clashedUids = new Set();
+        for (let i = 0; i < this.rows.length; i++) {
+          const r = this.rows[i];
+          const low = r.modelName.trim().toLowerCase();
+          const txdLow = r.txdName.trim().toLowerCase();
+          if (
+            idCounts.get(r.id) > 1 ||
+            !low ||
+            nameCounts.get(low) > 1 ||
+            !txdLow ||
+            (!isVanilla && (
+              r.id < 313 ||
+              VANILLA_PED_NAMES.has(low) ||
+              txdCounts.get(txdLow) > 1 ||
+              VANILLA_PED_NAMES.has(txdLow)
+            ))
+          ) {
+            clashedUids.add(r.uid);
+          }
+        }
+
+        this._cachedClashVersion = this.clashVersion;
+        this._cachedClashSet = clashedUids;
+        return clashedUids;
+      }
+
+      analyzeMergedPedGrp(pedGrpText) {
+        const lines = String(pedGrpText || '').split(/\r?\n/);
+        let maxCount = 0;
+        let maxGroups = [];
+        let activeLines = 0;
+
+        for (const rawLine of lines) {
+          const trimmed = rawLine.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          const hashIdx = trimmed.indexOf('#');
+          const dataPart = hashIdx >= 0 ? trimmed.slice(0, hashIdx).trim() : trimmed;
+          const groupLabel = hashIdx >= 0 ? trimmed.slice(hashIdx + 1).trim() : 'Unnamed Group';
+          const peds = dataPart.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+          if (peds.length === 0) continue;
+
+          activeLines++;
+          if (peds.length > maxCount) {
+            maxCount = peds.length;
+            maxGroups = [groupLabel];
+          } else if (peds.length === maxCount && !maxGroups.includes(groupLabel)) {
+            maxGroups.push(groupLabel);
+          }
+        }
+
+        return { maxCount, maxGroups, activeLines };
+      }
+    }
+
+    const store = new PedStore();
+    // Backward-compatible state alias for any external inspection
+    const state = store;
+
+    // =========================================================================
+    // 4. TOAST & MODAL HELPERS
     // =========================================================================
     function toast(msg, type = 'info') {
       const box = document.getElementById('toastContainer');
@@ -1644,7 +2260,7 @@
     });
 
     // =========================================================================
-    // 4. IDE & PEDGRP PARSERS
+    // 5. IDE & PEDGRP PARSERS
     // =========================================================================
     function parseIdeText(text, sourceTag) {
       const parsed = [];
@@ -1698,11 +2314,12 @@
         if (!trimmed || trimmed.startsWith('#')) continue;
         const hashIdx = trimmed.indexOf('#');
         const dataPart = hashIdx >= 0 ? trimmed.slice(0, hashIdx).trim() : trimmed;
-        const groupName = hashIdx >= 0 ? trimmed.slice(hashIdx + 1).trim() : 'POPCYCLE_GROUP_CASUAL_AVERAGE';
+        const rawGroupName = hashIdx >= 0 ? trimmed.slice(hashIdx + 1).trim() : 'POPCYCLE_GROUP_CASUAL_AVERAGE';
+        const groupName = normalizePedGroupName(rawGroupName);
         if (!groupName) continue;
 
-        if (!state.pedGroupsMaster.includes(groupName)) {
-          state.pedGroupsMaster.push(groupName);
+        if (!store.pedGroupsMaster.includes(groupName)) {
+          store.pedGroupsMaster.push(groupName);
         }
 
         const names = dataPart.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
@@ -1722,8 +2339,115 @@
       }
     }
 
+    function setEditorMode(mode) {
+      store.editorMode = mode;
+      const badge = document.getElementById('activeModeBadge');
+      const isVanilla = mode === 'vanilla';
+      badge.textContent = isVanilla ? 'VANILLA IDE+GRP MODE' : 'ADD-ON MODE';
+      badge.classList.toggle('vanilla', isVanilla);
+
+      document.getElementById('btnAutoRename').style.display = isVanilla ? 'none' : '';
+      document.getElementById('statPairedPill').style.display = isVanilla ? 'none' : '';
+      document.getElementById('filterFileStatus').style.display = isVanilla ? 'none' : '';
+    }
+
+    // Vanilla Mode (ped.ide + pedgrp.dat) Step-by-Step File Loader
+    let pendingVanillaIdeFile = null;
+    let pendingVanillaGrpFile = null;
+
+    function openVanillaModeModal() {
+      pendingVanillaIdeFile = null;
+      pendingVanillaGrpFile = null;
+      document.getElementById('vanillaModeIdeInput').value = '';
+      document.getElementById('vanillaModeGrpInput').value = '';
+      document.getElementById('vanillaModeIdeStatus').textContent = 'Waiting for ped.ide...';
+      document.getElementById('vanillaModeIdeStatus').style.color = 'var(--text-muted)';
+      document.getElementById('vanillaModeGrpStatus').textContent = 'Waiting for pedgrp.dat...';
+      document.getElementById('vanillaModeGrpStatus').style.color = 'var(--text-muted)';
+      document.getElementById('btnConfirmVanillaImport').disabled = true;
+      openModal('modalVanillaImport');
+    }
+
+    document.getElementById('vanillaModeIdeInput').addEventListener('change', (e) => {
+      pendingVanillaIdeFile = e.target.files?.[0] || null;
+      const st = document.getElementById('vanillaModeIdeStatus');
+      if (pendingVanillaIdeFile) {
+        st.textContent = `✓ Ready: ${pendingVanillaIdeFile.name}`;
+        st.style.color = '#34d399';
+      } else {
+        st.textContent = 'Waiting for ped.ide...';
+        st.style.color = 'var(--text-muted)';
+      }
+      document.getElementById('btnConfirmVanillaImport').disabled = !(pendingVanillaIdeFile && pendingVanillaGrpFile);
+    });
+
+    document.getElementById('vanillaModeGrpInput').addEventListener('change', (e) => {
+      pendingVanillaGrpFile = e.target.files?.[0] || null;
+      const st = document.getElementById('vanillaModeGrpStatus');
+      if (pendingVanillaGrpFile) {
+        st.textContent = `✓ Ready: ${pendingVanillaGrpFile.name}`;
+        st.style.color = '#34d399';
+      } else {
+        st.textContent = 'Waiting for pedgrp.dat...';
+        st.style.color = 'var(--text-muted)';
+      }
+      document.getElementById('btnConfirmVanillaImport').disabled = !(pendingVanillaIdeFile && pendingVanillaGrpFile);
+    });
+
+    document.getElementById('btnConfirmVanillaImport').addEventListener('click', async () => {
+      if (!pendingVanillaIdeFile || !pendingVanillaGrpFile) return;
+      closeModal('modalVanillaImport');
+      showLoading('Loading Vanilla Game Files...', `Reading ${pendingVanillaIdeFile.name} & ${pendingVanillaGrpFile.name}...`, 25);
+      await yieldFrame();
+
+      try {
+        const [ideText, grpText] = await Promise.all([
+          pendingVanillaIdeFile.text(),
+          pendingVanillaGrpFile.text()
+        ]);
+
+        store.clearAll();
+        setEditorMode('vanilla');
+        store.vanillaIdeFilename = pendingVanillaIdeFile.name;
+        store.rawVanillaIdeText = ideText;
+        store.rawVanillaPedGrpText = grpText;
+
+        const modelToGroupMap = new Map();
+        const extraNamesByGroup = new Map();
+        parsePedGrpText(grpText, modelToGroupMap, extraNamesByGroup);
+        const ideRows = parseIdeText(ideText, pendingVanillaIdeFile.name);
+
+        for (const r of ideRows) {
+          const grps = modelToGroupMap.get(r.modelName.toLowerCase());
+          if (grps && grps.length > 0) {
+            r.pedGroups = [...grps];
+            rebuildRowSearchIndex(r);
+          }
+        }
+
+        const ideNameSet = new Set(ideRows.map(r => r.modelName.toLowerCase()));
+        store.rawPedGrpExtras.clear();
+        for (const [grp, nameSet] of extraNamesByGroup.entries()) {
+          const leftovers = new Set([...nameSet].filter(n => !ideNameSet.has(n.toLowerCase())));
+          if (leftovers.size > 0) store.rawPedGrpExtras.set(grp, leftovers);
+        }
+
+        store.setRows(ideRows);
+        refreshPedGroupDropdownFilter();
+        document.getElementById('folderLabel').textContent = `Vanilla Mode: ${pendingVanillaIdeFile.name} + ${pendingVanillaGrpFile.name} (3D Preview Disabled)`;
+        sheetWrapper.scrollTop = 0;
+        viewport.render(true);
+        hideLoading();
+        toast(`Loaded ${ideRows.length} vanilla peds from ${pendingVanillaIdeFile.name} & ${pendingVanillaGrpFile.name}.`, 'success');
+      } catch (err) {
+        hideLoading();
+        console.error(err);
+        toast(`Failed to load vanilla files: ${err.message}`, 'error');
+      }
+    });
+
     // =========================================================================
-    // 5. UNIFIED DIRECTORY TREE PROCESSOR (WORKS FOR BOTH file:// AND https://)
+    // 6. UNIFIED DIRECTORY TREE PROCESSOR (WORKS FOR BOTH file:// AND https://)
     // =========================================================================
     function buildPairMapFromHandles(handles) {
       const map = new Map();
@@ -1749,6 +2473,12 @@
     }
 
     async function processVirtualDirectoryTree(tree) {
+      showLoading('Importing Directory...', `Scanning /${tree.rootName}...`, 15);
+      await yieldFrame();
+
+      setEditorMode('addon');
+      store.rawVanillaIdeText = '';
+      store.rawVanillaPedGrpText = '';
       document.getElementById('folderLabel').textContent = `Active Directory: /${tree.rootName}`;
 
       const baseModelMap = buildPairMapFromHandles(tree.gta3RootFiles);
@@ -1795,16 +2525,22 @@
         await processDataBucket(tree.dataNumericFolders.get(numKey), `data/${numKey}`, subModelMaps.get(numKey));
       }
 
+      updateLoading('Linking ped groups & search indices...', 60);
+      await yieldFrame();
+
       for (const r of newRows) {
         const grps = modelToGroupMap.get(r.modelName.toLowerCase());
-        if (grps && grps.length > 0) r.pedGroups = [...grps];
+        if (grps && grps.length > 0) {
+          r.pedGroups = [...grps];
+          rebuildRowSearchIndex(r);
+        }
       }
 
       const addonNameSet = new Set(newRows.map(r => r.modelName.toLowerCase()));
-      state.rawPedGrpExtras.clear();
+      store.rawPedGrpExtras.clear();
       for (const [grp, nameSet] of extraNamesByGroup.entries()) {
         const leftovers = new Set([...nameSet].filter(n => !addonNameSet.has(n.toLowerCase())));
-        if (leftovers.size > 0) state.rawPedGrpExtras.set(grp, leftovers);
+        if (leftovers.size > 0) store.rawPedGrpExtras.set(grp, leftovers);
       }
 
       let maxId = 13999;
@@ -1812,7 +2548,6 @@
         if (r.id > maxId) maxId = r.id;
       }
 
-      // Process optional Add/ folder -> numeric ID & numeric name (anti-replace)
       let addedFromAdd = 0;
       const addPairs = buildPairMapFromHandles(tree.addFiles);
       for (const key of [...addPairs.keys()].sort()) {
@@ -1831,7 +2566,6 @@
         addedFromAdd++;
       }
 
-      // If data/ and Add/ were empty, load loose files from models/gta3/ as numeric add-ons
       if (newRows.length === 0 && baseModelMap.size > 0) {
         for (const key of [...baseModelMap.keys()].sort()) {
           const pair = baseModelMap.get(key);
@@ -1848,11 +2582,14 @@
         }
       }
 
-      state.rows = newRows;
+      updateLoading('Rendering virtual viewport...', 90);
+      store.setRows(newRows);
       refreshPedGroupDropdownFilter();
-      renderTable();
+      sheetWrapper.scrollTop = 0;
+      viewport.render(true);
+      hideLoading();
 
-      const clashCount = getClashSet().size;
+      const clashCount = store.getClashSet().size;
       toast(
         `Loaded ${newRows.length} peds` +
         (addedFromAdd ? ` (${addedFromAdd} from Add/ converted to numeric IDs)` : '') +
@@ -1894,7 +2631,6 @@
       }
     }
 
-    // Method A: Modern File System Access API (HTTPS / GitHub Pages / localhost)
     async function importViaDirectoryPicker() {
       const rootHandle = await window.showDirectoryPicker({ mode: 'read' });
       const tree = createEmptyDirTree(rootHandle.name);
@@ -1923,7 +2659,6 @@
       await processVirtualDirectoryTree(tree);
     }
 
-    // Method B: Fallback <input type="file" webkitdirectory> (Works 100% locally on file://)
     const fallbackDirInput = document.getElementById('fallbackDirInput');
     fallbackDirInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files || []);
@@ -1956,7 +2691,7 @@
     }
 
     // =========================================================================
-    // 6. COLLISION CHECKER, SANITIZER, AUTO-RENAME & SHIFT-UP DELETE
+    // 7. COLLISION CHECKER, SANITIZER, AUTO-RENAME & SHIFT-UP DELETE (R05, R09)
     // =========================================================================
     function sanitizeGtaAssetName(rawName, fallback = '14000') {
       const cleaned = String(rawName ?? '')
@@ -1965,52 +2700,29 @@
       return cleaned || String(fallback).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || '14000';
     }
 
-    function getClashSet() {
-      const idCounts = new Map();
-      const nameCounts = new Map();
-      const txdCounts = new Map();
-      for (const r of state.rows) {
-        idCounts.set(r.id, (idCounts.get(r.id) || 0) + 1);
-        const low = r.modelName.trim().toLowerCase();
-        const txdLow = r.txdName.trim().toLowerCase();
-        nameCounts.set(low, (nameCounts.get(low) || 0) + 1);
-        txdCounts.set(txdLow, (txdCounts.get(txdLow) || 0) + 1);
-      }
-      const clashedUids = new Set();
-      for (const r of state.rows) {
-        const low = r.modelName.trim().toLowerCase();
-        const txdLow = r.txdName.trim().toLowerCase();
-        if (
-          idCounts.get(r.id) > 1 ||
-          r.id < 313 ||
-          !low ||
-          nameCounts.get(low) > 1 ||
-          VANILLA_PED_NAMES.has(low) ||
-          !txdLow ||
-          txdCounts.get(txdLow) > 1 ||
-          VANILLA_PED_NAMES.has(txdLow)
-        ) {
-          clashedUids.add(r.uid);
-        }
-      }
-      return clashedUids;
-    }
-
-    function fixClashesOnly() {
-      if (state.rows.length === 0) return;
+    async function fixClashesOnly() {
+      if (store.rows.length === 0) return;
+      const isVanilla = store.editorMode === 'vanilla';
       const usedIds = new Set();
-      const usedNames = new Set(VANILLA_PED_NAMES);
-      const usedTxdNames = new Set(VANILLA_PED_NAMES);
+      const usedNames = isVanilla ? new Set() : new Set(VANILLA_PED_NAMES);
+      const usedTxdNames = isVanilla ? new Set() : new Set(VANILLA_PED_NAMES);
 
-      let highestId = 13999;
-      for (const r of state.rows) {
-        if (r.id >= 14000 && r.id > highestId) highestId = r.id;
+      let highestId = isVanilla ? 299 : 13999;
+      for (const r of store.rows) {
+        if (r.id > highestId) highestId = r.id;
+      }
+
+      const largeBatch = store.rows.length > 500;
+      if (largeBatch) {
+        showLoading('Checking & Fixing Clashes...', `Scanning ${store.rows.length} peds...`, 15);
+        await yieldFrame();
       }
 
       let fixedCount = 0;
-      for (const r of state.rows) {
+      await runChunkedTask(store.rows, (r) => {
         let needsFix = false;
-        if (r.id < 313 || usedIds.has(r.id)) {
+        const invalidId = isVanilla ? (r.id < 0 || usedIds.has(r.id)) : (r.id < 313 || usedIds.has(r.id));
+        if (invalidId) {
           highestId++;
           r.id = highestId;
           needsFix = true;
@@ -2024,9 +2736,9 @@
         }
         const low = r.modelName.toLowerCase();
         if (!low || usedNames.has(low)) {
-          const newName = String(r.id);
+          const newName = isVanilla ? `ped_${r.id}` : String(r.id);
           r.modelName = newName;
-          r.txdName = newName;
+          if (!isVanilla) r.txdName = newName;
           needsFix = true;
         }
         usedNames.add(r.modelName.toLowerCase());
@@ -2037,24 +2749,40 @@
           needsFix = true;
         }
         const txdLow = r.txdName.toLowerCase();
-        if (!txdLow || usedTxdNames.has(txdLow)) {
+        // Di mode Vanilla, banyak ped sah memakai txdName yang sama (sharing TXD), jadi hanya cek kosong
+        if (!txdLow || (!isVanilla && usedTxdNames.has(txdLow))) {
           r.txdName = !usedTxdNames.has(r.modelName.toLowerCase()) ? r.modelName : String(r.id);
           needsFix = true;
         }
         usedTxdNames.add(r.txdName.toLowerCase());
 
-        if (needsFix) fixedCount++;
-      }
+        if (needsFix) {
+          rebuildRowSearchIndex(r);
+          fixedCount++;
+        }
+      }, {
+        onProgress: largeBatch ? (done, tot) => updateLoading(`Checked ${done}/${tot} peds...`, 15 + (done / tot) * 75) : null
+      });
 
-      renderTable();
+      store.invalidateFilters();
+      store.invalidateClashes();
+      viewport.render(true);
+      if (largeBatch) hideLoading();
+
       toast(fixedCount > 0 ? `Automatically fixed ${fixedCount} ID / ModelName / TxdName clashes!` : 'No ID, ModelName, or TxdName clashes found.', 'success');
     }
 
-    function applyAutoRename(startId, mode) {
+    async function applyAutoRename(startId, mode) {
       let curId = Number(startId) || 14000;
       const usedNames = new Set(VANILLA_PED_NAMES);
+      const largeBatch = store.rows.length > 500;
 
-      for (const r of state.rows) {
+      if (largeBatch) {
+        showLoading('Applying Auto-Rename...', `Updating ${store.rows.length} peds...`, 15);
+        await yieldFrame();
+      }
+
+      await runChunkedTask(store.rows, (r) => {
         r.id = curId;
         if (mode === 'numeric') {
           r.modelName = String(curId);
@@ -2070,35 +2798,28 @@
           }
         }
         usedNames.add(r.modelName.trim().toLowerCase());
+        rebuildRowSearchIndex(r);
         curId++;
-      }
+      }, {
+        onProgress: largeBatch ? (done, tot) => updateLoading(`Renamed ${done}/${tot} peds...`, 15 + (done / tot) * 75) : null
+      });
 
-      renderTable();
-      toast(`Auto-rename completed for ${state.rows.length} peds (starting at ID ${startId}).`, 'success');
+      store.invalidateFilters();
+      store.invalidateClashes();
+      viewport.render(true);
+      if (largeBatch) hideLoading();
+
+      toast(`Auto-rename completed for ${store.rows.length} peds (starting at ID ${startId}).`, 'success');
     }
 
     function deleteRowWithShiftUp(uid) {
-      const idx = state.rows.findIndex(r => r.uid === uid);
-      if (idx === -1) return;
-
-      const deletedId = state.rows[idx].id;
-      state.rows.splice(idx, 1);
-
-      for (let i = idx; i < state.rows.length; i++) {
-        const row = state.rows[i];
-        const prevIdStr = String(row.id);
-        const newId = deletedId + (i - idx);
-        row.id = newId;
-        if (row.modelName === prevIdStr) row.modelName = String(newId);
-        if (row.txdName === prevIdStr) row.txdName = String(newId);
-      }
-
-      renderTable();
+      if (!store.deleteRowShiftUp(uid)) return;
+      viewport.render(true);
       toast('Row deleted & subsequent IDs shifted up automatically.', 'info');
     }
 
     // =========================================================================
-    // 7. SPREADSHEET RENDERING & SELECTION UX
+    // 8. LAZY HYDRATION DICTIONARIES & VIRTUALIZED VIEWPORT RENDERER (R01, R02, R03, R04, R10, R11, R12)
     // =========================================================================
     function escapeHtml(str) {
       return String(str ?? '')
@@ -2110,14 +2831,17 @@
 
     function createSelectTemplateCache(options, isObj = false) {
       const exactByLower = new Map();
+      const labelByLower = new Map();
       let optionsHtml = '';
       for (const item of options) {
         const val = String(isObj ? item.v : item);
         const lbl = String(isObj ? item.label : item);
-        exactByLower.set(val.toLowerCase(), val);
+        const low = val.toLowerCase();
+        exactByLower.set(low, val);
+        labelByLower.set(low, lbl);
         optionsHtml += `<option value="${escapeHtml(val)}">${escapeHtml(lbl)}</option>`;
       }
-      return { optionsHtml, exactByLower };
+      return { optionsHtml, exactByLower, labelByLower };
     }
 
     const CACHED_SELECT_TEMPLATES = {
@@ -2132,7 +2856,23 @@
       voice: createSelectTemplateCache(ALL_VOICE_OPTIONS, true)
     };
 
-    function buildSelectHtml(cacheKey, currentVal, field, extraClass = '') {
+    function getSelectDisplayLabel(cacheKey, currentVal) {
+      const cache = CACHED_SELECT_TEMPLATES[cacheKey];
+      const rawStr = String(currentVal ?? '');
+      if (!cache) return rawStr;
+      const lbl = cache.labelByLower.get(rawStr.toLowerCase());
+      if (lbl !== undefined) return lbl;
+      return rawStr ? `${rawStr} (Imported)` : '';
+    }
+
+    // Lightweight resting cell (0 <option> nodes in DOM — R02)
+    function buildLazySelectCellHtml(cacheKey, currentVal, field, extraClass = '') {
+      const displayLabel = getSelectDisplayLabel(cacheKey, currentVal);
+      return `<div class="cell-lazy-select ${extraClass}" tabindex="0" role="combobox" aria-expanded="false" data-field="${field}" data-cache="${cacheKey}" title="${escapeHtml(displayLabel)}"><span class="lazy-sel-text">${escapeHtml(displayLabel)}</span><span class="lazy-sel-arrow">▾</span></div>`;
+    }
+
+    // Hydrated native <select> instantiated on demand only for the single active cell (R02)
+    function buildHydratedSelectHtml(cacheKey, currentVal, field, extraClass = '') {
       const cache = CACHED_SELECT_TEMPLATES[cacheKey];
       const rawStr = String(currentVal ?? '');
       const exactVal = cache.exactByLower.get(rawStr.toLowerCase());
@@ -2147,70 +2887,105 @@
         optsHtml = cache.optionsHtml;
       }
 
-      return `<select class="cell-select ${extraClass}" data-field="${field}">${optsHtml}</select>`;
+      return `<select class="cell-select ${extraClass}" data-field="${field}" data-cache="${cacheKey}">${optsHtml}</select>`;
+    }
+
+    function hydrateLazySelectCell(lazyEl, autoOpen = false) {
+      if (!lazyEl || !lazyEl.classList.contains('cell-lazy-select')) return null;
+      const tr = lazyEl.closest('tr');
+      const td = lazyEl.parentElement;
+      if (!tr || !td) return null;
+
+      const row = store.getByUid(tr.dataset.uid);
+      if (!row) return null;
+
+      const field = lazyEl.dataset.field;
+      const cacheKey = lazyEl.dataset.cache;
+      const extraClass = lazyEl.classList.contains('mono') ? 'mono' : '';
+
+      td.innerHTML = buildHydratedSelectHtml(cacheKey, row[field], field, extraClass);
+      const selectEl = td.querySelector('select.cell-select');
+      if (selectEl) {
+        selectEl.focus();
+        if (autoOpen && typeof selectEl.showPicker === 'function') {
+          try {
+            selectEl.showPicker();
+          } catch (_) {
+            // Fallback: the browser will allow the user to make a selection in the standard way if `showPicker` is restricted
+          }
+        }
+      }
+      return selectEl;
+    }
+
+    function dehydrateSelectCell(selectEl) {
+      if (!selectEl || !selectEl.classList.contains('cell-select')) return;
+      const tr = selectEl.closest('tr');
+      const td = selectEl.parentElement;
+      if (!tr || !td) return;
+
+      const row = store.getByUid(tr.dataset.uid);
+      if (!row) return;
+
+      const field = selectEl.dataset.field;
+      const cacheKey = selectEl.dataset.cache;
+      const extraClass = selectEl.classList.contains('mono') ? 'mono' : '';
+
+      td.innerHTML = buildLazySelectCellHtml(cacheKey, row[field], field, extraClass);
     }
 
     function refreshPedGroupDropdownFilter() {
       const sel = document.getElementById('filterGroup');
       const cur = sel.value;
       sel.innerHTML = `<option value="">All Ped Groups</option>` +
-        state.pedGroupsMaster.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+        store.pedGroupsMaster.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
       sel.value = cur;
     }
 
-    function getFilteredRows() {
-      const q = document.getElementById('searchInput').value.trim().toLowerCase();
-      const grp = document.getElementById('filterGroup').value;
-      const fStat = document.getElementById('filterFileStatus').value;
-
-      return state.rows.filter(r => {
-        if (grp) {
-          if (grp === 'NONE' && r.pedGroups.length > 0) return false;
-          if (grp !== 'NONE' && !r.pedGroups.includes(grp)) return false;
-        }
-        const hasBoth = Boolean(r.dffHandle && r.txdHandle);
-        const hasAny = Boolean(r.dffHandle || r.txdHandle);
-        if (fStat === 'both' && !hasBoth) return false;
-        if (fStat === 'partial' && (hasBoth || !hasAny)) return false;
-        if (fStat === 'none' && hasAny) return false;
-        if (q) {
-          const hay = `${r.id} ${r.modelName} ${r.txdName} ${r.pedtype} ${r.stat} ${r.animGroup} ${r.carsMask} ${r.voice1} ${r.voice2} ${r.pedGroups.join(' ')} ${r.sourceTag}`.toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-        return true;
-      });
+    function syncSelectAllCheckboxState() {
+      const chkAll = document.getElementById('chkSelectAll');
+      const filtered = store.getFilteredRows();
+      if (filtered.length === 0) {
+        chkAll.checked = false;
+        chkAll.indeterminate = false;
+        return;
+      }
+      let selInFilter = 0;
+      for (let i = 0; i < filtered.length; i++) {
+        if (filtered[i].selected) selInFilter++;
+      }
+      chkAll.checked = selInFilter === filtered.length;
+      chkAll.indeterminate = selInFilter > 0 && selInFilter < filtered.length;
     }
 
     function updateSelectionCountUI() {
-      let selectedCount = 0;
-      for (const r of state.rows) {
-        if (r.selected) selectedCount++;
-      }
+      const selectedCount = store.selectedCount;
       document.getElementById('selCountLabel').textContent = selectedCount;
       document.getElementById('randCountLabel').textContent = selectedCount;
       document.getElementById('btnCopyFromPed').disabled = selectedCount === 0;
       document.getElementById('btnRandomizeSelected').disabled = selectedCount === 0;
+      syncSelectAllCheckboxState();
     }
 
     function recalculateClashesUI() {
-      const clashSet = getClashSet();
+      const clashSet = store.getClashSet();
       const clashes = clashSet.size;
       document.getElementById('statClashes').textContent = clashes;
       const clashPill = document.getElementById('statClashPill');
       clashPill.className = clashes > 0 ? 'pill clash' : 'pill ok';
-      document.querySelectorAll('#pedTbody tr').forEach(el => {
+
+      const rows = pedTbody.querySelectorAll('tr[data-uid]');
+      for (let i = 0; i < rows.length; i++) {
+        const el = rows[i];
         el.classList.toggle('row-clash', clashSet.has(el.dataset.uid));
-      });
+      }
       return clashSet;
     }
 
     function updateStatsBar(precomputedClashSet = null) {
-      const total = state.rows.length;
-      let paired = 0;
-      for (const r of state.rows) {
-        if (r.dffHandle && r.txdHandle) paired++;
-      }
-      const clashes = precomputedClashSet ? precomputedClashSet.size : getClashSet().size;
+      const total = store.rows.length;
+      const paired = store.pairedCount;
+      const clashes = precomputedClashSet ? precomputedClashSet.size : store.getClashSet().size;
 
       document.getElementById('statTotal').textContent = total;
       document.getElementById('statPaired').textContent = paired;
@@ -2220,70 +2995,31 @@
       const clashPill = document.getElementById('statClashPill');
       clashPill.className = clashes > 0 ? 'pill clash' : 'pill ok';
 
+      const maxGrpPill = document.getElementById('statMaxGrpPill');
+      const maxGrpValEl = document.getElementById('statMaxGrp');
+      if (total === 0) {
+        maxGrpValEl.textContent = '0';
+        maxGrpPill.className = 'pill ok';
+        maxGrpPill.title = 'Highest number of peds in any single pedgrp.dat line';
+      } else {
+        const stats = store.analyzeMergedPedGrp(generatePedGrpDat());
+        const peakGroupName = stats.maxGroups[0] ? ` (${stats.maxGroups[0]})` : '';
+        maxGrpValEl.textContent = `${stats.maxCount}${peakGroupName}`;
+        if (stats.maxCount > 23) {
+          maxGrpPill.className = 'pill warn';
+          maxGrpPill.title = `Warning: Peak is ${stats.maxCount} peds in a single pedgrp! Increase pedgrp peds limit in fastman92limitAdjuster above ${stats.maxCount}.`;
+        } else {
+          maxGrpPill.className = 'pill ok';
+          maxGrpPill.title = `Peak is ${stats.maxCount} peds in a single pedgrp (within default 23 limit).`;
+        }
+      }
+
       document.getElementById('emptyState').style.display = total === 0 ? 'flex' : 'none';
-    }
-
-    function renderTable() {
-      const tbody = document.getElementById('pedTbody');
-      const filtered = getFilteredRows();
-      const clashSet = getClashSet();
-
-      const htmlParts = filtered.map((r, visIdx) => {
-        const isClash = clashSet.has(r.uid);
-        const modelWarn = r.modelName.length > 20;
-        const txdWarn = r.txdName.length > 20;
-        const fileStatus = (r.dffHandle && r.txdHandle)
-          ? `<span class="file-badge both">DFF+TXD</span>`
-          : (r.dffHandle || r.txdHandle)
-            ? `<span class="file-badge partial">${r.dffHandle ? 'DFF Only' : 'TXD Only'}</span>`
-            : `<span class="file-badge none">No Mesh</span>`;
-
-        return `
-          <tr data-uid="${r.uid}" data-vis-idx="${visIdx}" class="${r.selected ? 'selected' : ''} ${isClash ? 'row-clash' : ''}">
-            <td class="cell-chk sticky-col-0">
-              <input type="checkbox" class="row-chk" ${r.selected ? 'checked' : ''} />
-            </td>
-            <td class="sticky-col-1 id-cell">
-              <input type="number" class="cell-input mono" data-field="id" value="${r.id}" />
-            </td>
-            <td class="sticky-col-2 name-cell ${modelWarn ? 'name-len-warn' : ''}" title="${modelWarn ? 'Warning: >20 chars (GTA SA max 24 chars)' : ''}">
-              <div class="ped-name-wrap">
-                <input type="text" class="cell-input mono" data-field="modelName" maxlength="24" value="${escapeHtml(r.modelName)}" />
-                <div class="row-actions-inline">
-                  <button type="button" class="icon-btn btn-view-ped" title="View 3D Model (${escapeHtml(r.modelName)})" ${!r.dffHandle ? 'disabled' : ''}>👁️</button>
-                  <button type="button" class="icon-btn del btn-del-ped" title="Clear This Row & Shift Up">✕</button>
-                </div>
-              </div>
-            </td>
-            <td class="txd-cell ${txdWarn ? 'name-len-warn' : ''}" title="${txdWarn ? 'Warning: >20 chars (GTA SA max 24 chars)' : ''}">
-              <input type="text" class="cell-input mono" data-field="txdName" maxlength="24" value="${escapeHtml(r.txdName)}" />
-            </td>
-            <td>${buildSelectHtml('pedtype', r.pedtype, 'pedtype')}</td>
-            <td>${buildSelectHtml('stat', r.stat, 'stat')}</td>
-            <td>${buildSelectHtml('animGroup', r.animGroup, 'animGroup')}</td>
-            <td>${buildSelectHtml('carsMask', r.carsMask, 'carsMask', 'mono')}</td>
-            <td>${buildSelectHtml('flags', r.flags, 'flags')}</td>
-            <td>${buildSelectHtml('animFile', r.animFile, 'animFile')}</td>
-            <td>${buildSelectHtml('radio', r.radio1, 'radio1')}</td>
-            <td>${buildSelectHtml('radio', r.radio2, 'radio2')}</td>
-            <td>${buildSelectHtml('audioType', r.audioType, 'audioType')}</td>
-            <td>${buildSelectHtml('voice', r.voice1, 'voice1', 'mono')}</td>
-            <td>${buildSelectHtml('voice', r.voice2, 'voice2', 'mono')}</td>
-            <td>${buildMultiGroupCellHtml(r)}</td>
-            <td>${fileStatus}</td>
-            <td><span class="source-tag">${escapeHtml(r.sourceTag)}</span></td>
-          </tr>
-        `;
-      });
-
-      tbody.innerHTML = htmlParts.join('');
-      updateStatsBar(clashSet);
     }
 
     function formatPedGroupsSummary(groups) {
       if (!groups || groups.length === 0) return 'NONE';
-      const shortNames = groups.map(g => g.replace(/^POPCYCLE_GROUP_/, ''));
-      return shortNames.join(', ');
+      return groups.map(g => g.replace(/^POPCYCLE_GROUP_/, '')).join(', ');
     }
 
     function buildMultiGroupCellHtml(row) {
@@ -2299,6 +3035,158 @@
       `;
     }
 
+    function buildRowHtml(r, visIdx, clashSet) {
+      const isClash = clashSet.has(r.uid);
+      const parityClass = (visIdx % 2 === 0) ? 'row-even' : 'row-odd';
+      const modelWarn = r.modelName.length > 20;
+      const txdWarn = r.txdName.length > 20;
+      const isVanillaMode = store.editorMode === 'vanilla';
+      const fileStatus = isVanillaMode
+        ? `<span class="file-badge none">IDE+DAT Only</span>`
+        : (r.dffHandle && r.txdHandle)
+          ? `<span class="file-badge both">DFF+TXD</span>`
+          : (r.dffHandle || r.txdHandle)
+            ? `<span class="file-badge partial">${r.dffHandle ? 'DFF Only' : 'TXD Only'}</span>`
+            : `<span class="file-badge none">No Mesh</span>`;
+
+      return `
+        <tr data-uid="${r.uid}" data-vis-idx="${visIdx}" class="${parityClass} ${r.selected ? 'selected' : ''} ${isClash ? 'row-clash' : ''}">
+          <td class="cell-chk sticky-col-0">
+            <input type="checkbox" class="row-chk" ${r.selected ? 'checked' : ''} />
+          </td>
+          <td class="sticky-col-1 id-cell">
+            <input type="number" class="cell-input mono" data-field="id" value="${r.id}" />
+          </td>
+          <td class="sticky-col-2 name-cell ${modelWarn ? 'name-len-warn' : ''}" title="${modelWarn ? 'Warning: >20 chars (GTA SA max 24 chars)' : ''}">
+            <div class="ped-name-wrap">
+              <input type="text" class="cell-input mono" data-field="modelName" maxlength="24" value="${escapeHtml(r.modelName)}" />
+              <div class="row-actions-inline">
+                <button type="button" class="icon-btn btn-view-ped" title="${isVanillaMode ? '3D Preview disabled in Vanilla Mode (no DFF/TXD)' : `View 3D Model (${escapeHtml(r.modelName)})`}" ${(isVanillaMode || !r.dffHandle) ? 'disabled' : ''}>👁️</button>
+                <button type="button" class="icon-btn del btn-del-ped" title="Clear This Row & Shift Up">✕</button>
+              </div>
+            </div>
+          </td>
+          <td class="txd-cell ${txdWarn ? 'name-len-warn' : ''}" title="${txdWarn ? 'Warning: >20 chars (GTA SA max 24 chars)' : ''}">
+            <input type="text" class="cell-input mono" data-field="txdName" maxlength="24" value="${escapeHtml(r.txdName)}" />
+          </td>
+          <td>${buildLazySelectCellHtml('pedtype', r.pedtype, 'pedtype')}</td>
+          <td>${buildLazySelectCellHtml('stat', r.stat, 'stat')}</td>
+          <td>${buildLazySelectCellHtml('animGroup', r.animGroup, 'animGroup')}</td>
+          <td>${buildLazySelectCellHtml('carsMask', r.carsMask, 'carsMask', 'mono')}</td>
+          <td>${buildLazySelectCellHtml('flags', r.flags, 'flags')}</td>
+          <td>${buildLazySelectCellHtml('animFile', r.animFile, 'animFile')}</td>
+          <td>${buildLazySelectCellHtml('radio', r.radio1, 'radio1')}</td>
+          <td>${buildLazySelectCellHtml('radio', r.radio2, 'radio2')}</td>
+          <td>${buildLazySelectCellHtml('audioType', r.audioType, 'audioType')}</td>
+          <td>${buildLazySelectCellHtml('voice', r.voice1, 'voice1', 'mono')}</td>
+          <td>${buildLazySelectCellHtml('voice', r.voice2, 'voice2', 'mono')}</td>
+          <td>${buildMultiGroupCellHtml(r)}</td>
+          <td>${fileStatus}</td>
+          <td><span class="source-tag">${escapeHtml(r.sourceTag)}</span></td>
+        </tr>
+      `;
+    }
+
+    // Virtualized Viewport Manager (R01, R03, R04, R11)
+    const sheetWrapper = document.getElementById('sheetWrapper');
+    const pedTbody = document.getElementById('pedTbody');
+
+    const viewport = {
+      ROW_HEIGHT: 31,
+      OVERSCAN: 8,
+      lastStart: -1,
+      lastEnd: -1,
+      lastTotal: -1,
+      rafScheduled: false,
+
+      scheduleRender(force = false) {
+        if (force) {
+          this.render(true);
+          return;
+        }
+        if (this.rafScheduled) return;
+        this.rafScheduled = true;
+        requestAnimationFrame(() => {
+          this.rafScheduled = false;
+          this.render(false);
+        });
+      },
+
+      render(force = false) {
+        const filtered = store.getFilteredRows();
+        const total = filtered.length;
+        const maxScrollTop = Math.max(0, total * this.ROW_HEIGHT - (sheetWrapper.clientHeight || 400));
+        if (sheetWrapper.scrollTop > maxScrollTop) {
+          sheetWrapper.scrollTop = maxScrollTop;
+        }
+
+        const scrollTop = sheetWrapper.scrollTop;
+        const viewH = sheetWrapper.clientHeight || 600;
+
+        const start = Math.max(0, Math.floor(scrollTop / this.ROW_HEIGHT) - this.OVERSCAN);
+        const end = Math.min(total, Math.ceil((scrollTop + viewH) / this.ROW_HEIGHT) + this.OVERSCAN);
+
+        if (!force && start === this.lastStart && end === this.lastEnd && total === this.lastTotal) {
+          return;
+        }
+
+        const clashSet = store.getClashSet();
+        const topHeight = start * this.ROW_HEIGHT;
+        const bottomHeight = Math.max(0, (total - end) * this.ROW_HEIGHT);
+
+        const parts = new Array((end - start) + 2);
+        parts[0] = `<tr class="virtual-spacer" aria-hidden="true"><td colspan="18" style="height:${topHeight}px"></td></tr>`;
+
+        let p = 1;
+        for (let i = start; i < end; i++) {
+          parts[p++] = buildRowHtml(filtered[i], i, clashSet);
+        }
+
+        parts[p] = `<tr class="virtual-spacer" aria-hidden="true"><td colspan="18" style="height:${bottomHeight}px"></td></tr>`;
+
+        pedTbody.innerHTML = parts.join('');
+        this.lastStart = start;
+        this.lastEnd = end;
+        this.lastTotal = total;
+
+        updateStatsBar(clashSet);
+      },
+
+      // Lightweight DOM-only selection sync for currently mounted viewport rows (R03 & R04)
+      syncVisibleSelectionOnly() {
+        const trs = pedTbody.querySelectorAll('tr[data-uid]');
+        for (let i = 0; i < trs.length; i++) {
+          const tr = trs[i];
+          const row = store.getByUid(tr.dataset.uid);
+          if (!row) continue;
+          tr.classList.toggle('selected', row.selected);
+          const chk = tr.querySelector('.row-chk');
+          if (chk && chk.checked !== row.selected) {
+            chk.checked = row.selected;
+          }
+        }
+        updateSelectionCountUI();
+      }
+    };
+
+    function renderTable() {
+      viewport.render(true);
+    }
+
+    sheetWrapper.addEventListener('scroll', () => {
+      if (pedGroupPopover.classList.contains('open')) {
+        closePedGroupPopover();
+      }
+      viewport.scheduleRender(false);
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      viewport.scheduleRender(false);
+    }, { passive: true });
+
+    // =========================================================================
+    // 9. FLOATING PED GROUP POPOVER & DELEGATED TABLE EVENTS (R02, R03, R04, R10)
+    // =========================================================================
     let activePopoverUid = null;
     const pedGroupPopover = document.getElementById('pedGroupPopover');
     const pedGroupPopoverList = document.getElementById('pedGroupPopoverList');
@@ -2307,7 +3195,7 @@
       activePopoverUid = row.uid;
       document.getElementById('pedGroupPopoverTitle').textContent = `[${row.modelName}] Ped Groups`;
 
-      const availableGroups = state.pedGroupsMaster.filter(g => g !== 'NONE');
+      const availableGroups = store.pedGroupsMaster.filter(g => g !== 'NONE');
       const selectedSet = new Set(row.pedGroups || []);
 
       pedGroupPopoverList.innerHTML = availableGroups.map(g => `
@@ -2338,12 +3226,12 @@
 
     pedGroupPopoverList.addEventListener('change', (e) => {
       if (e.target.type !== 'checkbox' || !activePopoverUid) return;
-      const row = state.rows.find(r => r.uid === activePopoverUid);
+      const row = store.getByUid(activePopoverUid);
       if (!row) return;
 
       const checked = Array.from(pedGroupPopoverList.querySelectorAll('input[type="checkbox"]:checked'))
         .map(el => el.value);
-      row.pedGroups = checked;
+      store.updateField(activePopoverUid, 'pedGroups', checked);
 
       const tr = pedTbody.querySelector(`tr[data-uid="${row.uid}"]`);
       const cell = tr?.querySelector('.multi-grp-trigger')?.parentElement;
@@ -2352,9 +3240,9 @@
 
     document.getElementById('btnPopoverClearGroups').addEventListener('click', () => {
       if (!activePopoverUid) return;
-      const row = state.rows.find(r => r.uid === activePopoverUid);
+      const row = store.getByUid(activePopoverUid);
       if (!row) return;
-      row.pedGroups = [];
+      store.updateField(activePopoverUid, 'pedGroups', []);
       pedGroupPopoverList.querySelectorAll('input[type="checkbox"]').forEach(el => { el.checked = false; });
       const tr = pedTbody.querySelector(`tr[data-uid="${row.uid}"]`);
       const cell = tr?.querySelector('.multi-grp-trigger')?.parentElement;
@@ -2370,17 +3258,44 @@
       }
     });
 
-    const pedTbody = document.getElementById('pedTbody');
+    // Delegated Lazy Hydration on Mousedown & Keyboard Focus (R02 & R10)
+    pedTbody.addEventListener('mousedown', (e) => {
+      const lazyEl = e.target.closest('.cell-lazy-select');
+      if (lazyEl) {
+        e.preventDefault(); // Mencegah focus steal/cancel saat DOM diganti dari div ke select
+        hydrateLazySelectCell(lazyEl, true);
+      }
+    });
 
+    pedTbody.addEventListener('focusin', (e) => {
+      const lazyEl = e.target.closest('.cell-lazy-select');
+      if (lazyEl) {
+        hydrateLazySelectCell(lazyEl, false);
+      }
+    });
+
+    pedTbody.addEventListener('focusout', (e) => {
+      if (e.target.classList && e.target.classList.contains('cell-select')) {
+        // Defer dehydration agar popup <select> native tidak tertutup sebelum pilihan diklik
+        const sel = e.target;
+        setTimeout(() => {
+          if (document.activeElement !== sel && sel.isConnected) {
+            dehydrateSelectCell(sel);
+          }
+        }, 120);
+      }
+    });
+
+    // Delegated Field & Checkbox Updates (R07, R08, R10)
     pedTbody.addEventListener('change', (e) => {
-      const tr = e.target.closest('tr');
+      const tr = e.target.closest('tr[data-uid]');
       if (!tr) return;
       const uid = tr.dataset.uid;
-      const row = state.rows.find(r => r.uid === uid);
+      const row = store.getByUid(uid);
       if (!row) return;
 
       if (e.target.classList.contains('row-chk')) {
-        row.selected = e.target.checked;
+        store.setRowSelected(uid, e.target.checked);
         tr.classList.toggle('selected', row.selected);
         updateSelectionCountUI();
         return;
@@ -2389,7 +3304,8 @@
       const field = e.target.dataset.field;
       if (field) {
         if (field === 'id') {
-          row.id = parseInt(e.target.value, 10) || 14000;
+          const nextId = parseInt(e.target.value, 10) || 14000;
+          store.updateField(uid, 'id', nextId);
           recalculateClashesUI();
         } else if (field === 'modelName' || field === 'txdName') {
           const rawVal = e.target.value.trim();
@@ -2397,7 +3313,7 @@
           if (rawVal !== sanitized) {
             toast(`Sanitized "${rawVal}" → "${sanitized}" (GTA SA max 24 alphanumeric/_/- chars).`, 'warning');
           }
-          row[field] = sanitized;
+          store.updateField(uid, field, sanitized);
           e.target.value = sanitized;
 
           const cellTd = e.target.closest('td');
@@ -2408,45 +3324,35 @@
 
           if (field === 'modelName') {
             const txdInput = tr.querySelector('[data-field="txdName"]');
+            store.updateField(uid, 'txdName', sanitized);
             if (txdInput) {
-              row.txdName = sanitized;
               txdInput.value = sanitized;
               txdInput.closest('td')?.classList.toggle('name-len-warn', sanitized.length > 20);
             }
           }
           recalculateClashesUI();
         } else {
-          row[field] = e.target.value.trim();
+          store.updateField(uid, field, e.target.value.trim());
         }
       }
     });
 
+    // Delegated Click Handler for Shift-Selection (R04), PedGroup Popover, 3D Preview, and Shift-Up Delete (R10)
     pedTbody.addEventListener('click', (e) => {
-      const tr = e.target.closest('tr');
+      const tr = e.target.closest('tr[data-uid]');
       if (!tr) return;
       const uid = tr.dataset.uid;
-      const row = state.rows.find(r => r.uid === uid);
+      const row = store.getByUid(uid);
       if (!row) return;
 
       if (e.target.classList.contains('row-chk')) {
         const visIdx = Number(tr.dataset.visIdx);
-        if (e.shiftKey && state.lastCheckedIndex !== null) {
-          const filtered = getFilteredRows();
-          const start = Math.min(state.lastCheckedIndex, visIdx);
-          const end = Math.max(state.lastCheckedIndex, visIdx);
+        if (e.shiftKey && store.lastCheckedIndex !== null) {
           const targetVal = e.target.checked;
-          const span = end - start + 1;
-          (async () => {
-            if (span > 40) {
-              showLoading('Selecting Rows...', `Updating ${span} rows`, 40);
-              await nextFrame();
-            }
-            for (let i = start; i <= end; i++) filtered[i].selected = targetVal;
-            renderTable();
-            if (span > 40) hideLoading();
-          })();
+          store.setFilteredRangeSelection(store.lastCheckedIndex, visIdx, targetVal);
+          viewport.syncVisibleSelectionOnly();
         }
-        state.lastCheckedIndex = visIdx;
+        store.lastCheckedIndex = visIdx;
         return;
       }
 
@@ -2470,20 +3376,15 @@
       }
     });
 
-    document.getElementById('chkSelectAll').addEventListener('change', async (e) => {
-      const filtered = getFilteredRows();
+    // Select All Without Full Table Re-Render (R03 & R12)
+    document.getElementById('chkSelectAll').addEventListener('change', (e) => {
       const checked = e.target.checked;
-      if (filtered.length > 40) {
-        showLoading(checked ? 'Selecting All Rows...' : 'Deselecting Rows...', `${filtered.length} visible peds`, 45);
-        await nextFrame();
-      }
-      for (const r of filtered) r.selected = checked;
-      renderTable();
-      if (filtered.length > 40) hideLoading();
+      store.setFilteredSelection(checked);
+      viewport.syncVisibleSelectionOnly();
     });
 
     // =========================================================================
-    // 8. BULK "COPY DATA" (13 INDEPENDENT) & "RANDOMIZE" WITH BLACKLIST (x)
+    // 10. BULK "COPY DATA" & "RANDOMIZE" WITH CHUNKED SCHEDULING & BLACKLIST (R05, R09)
     // =========================================================================
     const ALL_PARAM_KEYS = [
       'pedtype', 'stat', 'animGroup', 'carsMask', 'flags',
@@ -2501,20 +3402,20 @@
         case 'radio': return RADIO_STATIONS;
         case 'audioType': return AUDIO_TYPES.map(v => ({ v, label: v }));
         case 'voice': return ACTIVE_ALL_VOICES;
-        case 'pedGroup': return state.pedGroupsMaster.map(v => ({ v, label: v }));
+        case 'pedGroup': return store.pedGroupsMaster.map(v => ({ v, label: v }));
         default: return [];
       }
     }
 
     function updateBlacklistResetBtn() {
       let totalBl = 0;
-      for (const s of Object.values(state.randomBlacklist)) totalBl += s.size;
+      for (const s of Object.values(store.randomBlacklist)) totalBl += s.size;
       document.getElementById('btnClearBlacklist').textContent = `Reset All (${totalBl})`;
     }
 
     function renderBlacklistChips() {
       const paramKey = document.getElementById('blacklistParamSelect').value;
-      const blSet = state.randomBlacklist[paramKey];
+      const blSet = store.randomBlacklist[paramKey];
       const items = getBlacklistPoolItems(paramKey);
       const container = document.getElementById('blacklistChipsContainer');
 
@@ -2532,28 +3433,31 @@
       if (!chip) return;
       const paramKey = document.getElementById('blacklistParamSelect').value;
       const val = chip.dataset.val;
-      const blSet = state.randomBlacklist[paramKey];
+      const blSet = store.randomBlacklist[paramKey];
       if (blSet.has(val)) blSet.delete(val);
       else blSet.add(val);
       renderBlacklistChips();
     });
 
     document.getElementById('btnClearBlacklist').addEventListener('click', () => {
-      for (const s of Object.values(state.randomBlacklist)) s.clear();
+      for (const s of Object.values(store.randomBlacklist)) s.clear();
       renderBlacklistChips();
       toast('All randomization blacklists cleared.', 'info');
     });
 
     document.getElementById('btnCopyFromPed').addEventListener('click', () => {
-      const selected = state.rows.filter(r => r.selected);
-      if (selected.length === 0) return;
+      if (store.selectedCount === 0) return;
 
-      document.getElementById('copyTargetCount').textContent = selected.length;
+      document.getElementById('copyTargetCount').textContent = store.selectedCount;
       document.getElementById('copySourceInput').value = '';
       const dl = document.getElementById('pedNamesDatalist');
-      dl.innerHTML = state.rows
-        .map(r => `<option value="${escapeHtml(r.modelName)}">ID ${r.id} (${escapeHtml(r.pedtype)} / ${escapeHtml(r.stat)})</option>`)
-        .join('');
+      const maxOptions = Math.min(store.rows.length, 500);
+      const opts = new Array(maxOptions);
+      for (let i = 0; i < maxOptions; i++) {
+        const r = store.rows[i];
+        opts[i] = `<option value="${escapeHtml(r.modelName)}">ID ${r.id} (${escapeHtml(r.pedtype)} / ${escapeHtml(r.stat)})</option>`;
+      }
+      dl.innerHTML = opts.join('');
 
       openModal('modalCopyPed');
       setTimeout(() => document.getElementById('copySourceInput').focus(), 50);
@@ -2566,7 +3470,7 @@
         return;
       }
 
-      const src = state.rows.find(r => r.modelName.toLowerCase() === query || String(r.id) === query);
+      const src = store.rows.find(r => r.modelName.toLowerCase() === query || String(r.id) === query);
       if (!src) {
         toast(`Reference ped "${query}" was not found in the sheet.`, 'error');
         return;
@@ -2575,38 +3479,39 @@
       const enabledKeys = ALL_PARAM_KEYS.filter(k => document.getElementById(`cp-${k}`)?.checked);
       closeModal('modalCopyPed');
 
-      const targets = state.rows.filter(r => r.selected && r.uid !== src.uid);
-      if (targets.length > 30) {
-        showLoading('Copying Ped Parameters...', `Applying to ${targets.length} peds`, 35);
-        await nextFrame();
+      const targets = store.rows.filter(r => r.selected && r.uid !== src.uid);
+      const largeBatch = targets.length > 250;
+      if (largeBatch) {
+        showLoading('Copying Ped Parameters...', `Applying to ${targets.length} peds...`, 15);
+        await yieldFrame();
       }
 
-      for (const target of targets) {
-        for (const k of enabledKeys) {
+      await runChunkedTask(targets, (target) => {
+        for (let i = 0; i < enabledKeys.length; i++) {
+          const k = enabledKeys[i];
           if (k === 'pedGroup') target.pedGroups = [...(src.pedGroups || [])];
           else target[k] = src[k];
         }
-      }
+        rebuildRowSearchIndex(target);
+      }, {
+        onProgress: largeBatch ? (done, tot) => updateLoading(`Updated ${done}/${tot} peds...`, 15 + (done / tot) * 80) : null
+      });
 
-      if (targets.length > 30) updateLoading('Rendering updated table...', 85);
-      renderTable();
-      hideLoading();
+      store.invalidateFilters();
+      viewport.render(true);
+      if (largeBatch) hideLoading();
       toast(`Copied ${enabledKeys.length} parameters from "${src.modelName}" to ${targets.length} selected peds!`, 'success');
     });
 
     document.getElementById('btnRandomizeSelected').addEventListener('click', () => {
-      const selected = state.rows.filter(r => r.selected);
-      if (selected.length === 0) return;
+      if (store.selectedCount === 0) return;
 
-      document.getElementById('randTargetCount').textContent = selected.length;
+      document.getElementById('randTargetCount').textContent = store.selectedCount;
       renderBlacklistChips();
       openModal('modalRandomizePed');
     });
 
-    // -------------------------------------------------------------------------
-    // SMART CONTEXT SYNC CLASSIFIERS & 3-STEP POOL RESOLVER
-    // (1. Build Context Pool -> 2. Filter Blacklist -> 3. Override if Empty)
-    // -------------------------------------------------------------------------
+    // Smart Context Sync Classifiers & 3-Step Pool Resolver
     const FEMALE_ANIM_GROUPS = new Set(['woman', 'sexywoman', 'busywoman', 'oldwoman', 'oldfatwoman', 'fatwoman', 'pro', 'jogwoman']);
     const OLD_ANIM_GROUPS = new Set(['oldman', 'oldwoman', 'oldfatwoman']);
     const RICH_ANIM_GROUPS = new Set(['sexywoman', 'busywoman']);
@@ -2631,12 +3536,10 @@
       };
     })();
 
-    // Step 1 -> Step 2 (Apply Blacklist) -> Step 3 (Context Sync Priority Override if Empty)
     function resolveContextPool(contextPool, blSet, fallbackPool = null) {
       const base = (contextPool && contextPool.length > 0) ? contextPool : (fallbackPool || []);
       const filtered = base.filter(v => !blSet.has(v));
       if (filtered.length > 0) return filtered;
-      // Priority Override: force-penetrate blacklist so context integrity never breaks
       return base;
     }
 
@@ -2719,88 +3622,161 @@
       return ['0', '1'];
     }
 
-    function pickMultipleUnique(pool, minCount, maxCount) {
-      if (!pool || pool.length === 0) return [];
-      const copy = [...new Set(pool)];
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
+    const EXCLUSIVE_PED_GROUPS = new Set([
+      ...Object.values(GANG_PED_GROUPS_BY_NUM),
+      'Dealers'
+    ]);
+
+    // Pedtypes that do NOT spawn via pedgrp.dat in GTA SA
+    const NON_PEDGRP_PEDTYPES = new Set([
+      'COP', 'MEDIC', 'FIREMAN', 'SPECIAL',
+      'MISSION1', 'MISSION2', 'MISSION3', 'MISSION4', 'MISSION5', 'MISSION6', 'MISSION7', 'MISSION8'
+    ]);
+
+    function getExclusivePedGroupRule(pedtype) {
+      const gangMatch = /^GANG([1-9]|10)$/.exec(pedtype);
+      if (gangMatch) {
+        const grp = GANG_PED_GROUPS_BY_NUM[Number(gangMatch[1])];
+        return { isExclusive: true, groups: grp ? [grp] : [] };
       }
-      const count = Math.min(copy.length, minCount + Math.floor(Math.random() * (maxCount - minCount + 1)));
-      return copy.slice(0, count);
+      if (pedtype === 'DEALER') {
+        return { isExclusive: true, groups: ['Dealers'] };
+      }
+      if (NON_PEDGRP_PEDTYPES.has(pedtype)) {
+        return { isExclusive: true, groups: [] };
+      }
+      return { isExclusive: false, groups: null };
     }
 
-    function getContextPedGroupPool(pedtype, stat, animGroup, gender) {
-      if (/^GANG(\d+)$/.test(pedtype)) return { pool: [pedtype], min: 1, max: 1 };
-      if (pedtype === 'COP') return { pool: ['COPS'], min: 1, max: 1 };
-      if (pedtype === 'MEDIC') return { pool: ['MEDIC'], min: 1, max: 1 };
-      if (pedtype === 'FIREMAN') return { pool: ['FIREMAN'], min: 1, max: 1 };
+    function getCityPriorityWeight(groupName) {
+      // Give (SF) and (VEGAS) city variants high selection priority during randomization
+      if (/\((SF|VEGAS)\)\s*$/i.test(groupName)) return 3.5;
+      return 1.0;
+    }
 
-      // Prostitutes: appear in red-light districts + clubs across cities
-      if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE' || animGroup === 'pro') {
-        return { pool: ['POPCYCLE_GROUP_PROSTITUTES', 'POPCYCLE_GROUP_CLUBBERS'], min: 1, max: 2 };
+    function weightedPickUniqueFromPool(pool, count) {
+      if (!pool || pool.length === 0 || count <= 0) return [];
+      const remaining = [...new Set(pool)];
+      const take = Math.min(remaining.length, count);
+      const picked = [];
+
+      for (let step = 0; step < take; step++) {
+        let totalWeight = 0;
+        for (let i = 0; i < remaining.length; i++) {
+          totalWeight += getCityPriorityWeight(remaining[i]);
+        }
+        let r = Math.random() * totalWeight;
+        let chosenIdx = 0;
+        for (let i = 0; i < remaining.length; i++) {
+          r -= getCityPriorityWeight(remaining[i]);
+          if (r <= 0) {
+            chosenIdx = i;
+            break;
+          }
+        }
+        picked.push(remaining[chosenIdx]);
+        remaining.splice(chosenIdx, 1);
       }
+      return picked;
+    }
 
-      // Criminals & Dealers: alleys, poor districts, clubs across cities
-      if (pedtype === 'CRIMINAL' || stat === 'STAT_CRIMINAL') {
+    function getContextPedGroupPool(pedtype, stat, animGroup) {
+      const excl = getExclusivePedGroupRule(pedtype);
+      if (excl.isExclusive) return { pool: excl.groups, min: excl.groups.length, max: excl.groups.length };
+
+      if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE' || animGroup === 'pro') {
         return {
-          pool: ['POPCYCLE_GROUP_CRIMINALS', 'DEALERS', 'POPCYCLE_GROUP_CASUAL_POOR', 'POPCYCLE_GROUP_CLUBBERS'],
-          min: 2,
+          pool: [
+            'POPCYCLE_GROUP_PROSTITUTES (SF)',
+            'POPCYCLE_GROUP_PROSTITUTES (VEGAS)',
+            'POPCYCLE_GROUP_PROSTITUTES',
+            'POPCYCLE_GROUP_CLUBBERS (SF)',
+            'POPCYCLE_GROUP_CLUBBERS (VEGAS)',
+            'POPCYCLE_GROUP_CLUBBERS'
+          ],
+          min: 1,
           max: 3
         };
       }
 
-      // Rich / Suit / Glamour: downtown LS/SF/LV, casinos, airports, clubs, shopping districts
+      if (pedtype === 'CRIMINAL' || stat === 'STAT_CRIMINAL') {
+        return {
+          pool: [
+            'POPCYCLE_GROUP_CRIMINALS (SF)',
+            'POPCYCLE_GROUP_CRIMINALS (VEGAS)',
+            'POPCYCLE_GROUP_CRIMINALS',
+            'POPCYCLE_GROUP_CASUAL_POOR (SF)',
+            'POPCYCLE_GROUP_CASUAL_POOR (VEGAS)',
+            'POPCYCLE_GROUP_CASUAL_POOR',
+            'POPCYCLE_GROUP_CLUBBERS (SF)',
+            'POPCYCLE_GROUP_CLUBBERS (VEGAS)',
+            'POPCYCLE_GROUP_CLUBBERS'
+          ],
+          min: 2,
+          max: 4
+        };
+      }
+
       if (stat === 'STAT_SUIT_GUY' || stat === 'STAT_SUIT_GIRL' || RICH_ANIM_GROUPS.has(animGroup)) {
         return {
           pool: [
-            'POPCYCLE_GROUP_BUSINESS', 'POPCYCLE_GROUP_CASUAL_RICH', 'POPCYCLE_GROUP_CLUBBERS',
-            'POPCYCLE_GROUP_SHOPPERS', 'POPCYCLE_GROUP_AIRPORT', 'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_GOLFERS'
+            'POPCYCLE_GROUP_BUSINESS (SF)', 'POPCYCLE_GROUP_BUSINESS (VEGAS)', 'POPCYCLE_GROUP_BUSINESS',
+            'POPCYCLE_GROUP_CASUAL_RICH (SF)', 'POPCYCLE_GROUP_CASUAL_RICH (VEGAS)', 'POPCYCLE_GROUP_CASUAL_RICH',
+            'POPCYCLE_GROUP_CLUBBERS (SF)', 'POPCYCLE_GROUP_CLUBBERS (VEGAS)', 'POPCYCLE_GROUP_CLUBBERS',
+            'Office workers', 'POPCYCLE_GROUP_GOLFERS', 'Shopkeepers'
           ],
           min: 2,
           max: 4
         };
       }
 
-      // Beachfolk: beaches + warm city streets & tourists
       if (stat === 'STAT_BEACH_GUY' || stat === 'STAT_BEACH_GIRL') {
         return {
-          pool: ['POPCYCLE_GROUP_BEACHFOLK', 'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_CASUAL_AVERAGE', 'POPCYCLE_GROUP_PARKFOLK'],
+          pool: [
+            'POPCYCLE_GROUP_BEACHFOLK',
+            'POPCYCLE_GROUP_PARKFOLK (SF)', 'POPCYCLE_GROUP_PARKFOLK (VEGAS)', 'POPCYCLE_GROUP_PARKFOLK',
+            'POPCYCLE_GROUP_CASUAL_AVERAGE (SF)', 'POPCYCLE_GROUP_CASUAL_AVERAGE (VEGAS)', 'POPCYCLE_GROUP_CASUAL_AVERAGE'
+          ],
           min: 2,
           max: 3
         };
       }
 
-      // Tourists & Shoppers: LV strip, SF piers, LS landmarks, airports, parks
       if (stat === 'STAT_TOURIST' || stat === 'STAT_SHOPPER') {
         return {
           pool: [
-            'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_SHOPPERS', 'POPCYCLE_GROUP_CASUAL_AVERAGE',
-            'POPCYCLE_GROUP_BEACHFOLK', 'POPCYCLE_GROUP_PARKFOLK', 'POPCYCLE_GROUP_AIRPORT'
+            'Shopkeepers',
+            'POPCYCLE_GROUP_CASUAL_AVERAGE (SF)', 'POPCYCLE_GROUP_CASUAL_AVERAGE (VEGAS)', 'POPCYCLE_GROUP_CASUAL_AVERAGE',
+            'POPCYCLE_GROUP_CASUAL_RICH (SF)', 'POPCYCLE_GROUP_CASUAL_RICH (VEGAS)', 'POPCYCLE_GROUP_CASUAL_RICH',
+            'POPCYCLE_GROUP_BEACHFOLK',
+            'POPCYCLE_GROUP_PARKFOLK (SF)', 'POPCYCLE_GROUP_PARKFOLK (VEGAS)', 'POPCYCLE_GROUP_PARKFOLK'
           ],
           min: 2,
           max: 4
         };
       }
 
-      // Elderly & Tramps: poor neighborhoods, parks, rural/desert towns across all regions
       if (stat === 'STAT_TRAMP_MALE' || stat === 'STAT_OLD_GUY' || stat === 'STAT_OLD_GIRL') {
         return {
           pool: [
-            'POPCYCLE_GROUP_CASUAL_POOR', 'POPCYCLE_GROUP_PARKFOLK', 'POPCYCLE_GROUP_SHOPPERS',
-            'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_DESERTFOLK'
+            'POPCYCLE_GROUP_CASUAL_POOR (SF)', 'POPCYCLE_GROUP_CASUAL_POOR (VEGAS)', 'POPCYCLE_GROUP_CASUAL_POOR',
+            'POPCYCLE_GROUP_PARKFOLK (SF)', 'POPCYCLE_GROUP_PARKFOLK (VEGAS)', 'POPCYCLE_GROUP_PARKFOLK',
+            'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_DESERT_FOLK'
           ],
           min: 2,
           max: 3
         };
       }
 
-      // General / Everyday Citizens: lively mix across all cities, suburbs, countryside & desert towns
       return {
         pool: [
-          'POPCYCLE_GROUP_CASUAL_AVERAGE', 'POPCYCLE_GROUP_CASUAL_POOR', 'POPCYCLE_GROUP_WORKERS',
-          'POPCYCLE_GROUP_SHOPPERS', 'POPCYCLE_GROUP_PARKFOLK', 'POPCYCLE_GROUP_CLUBBERS',
-          'POPCYCLE_GROUP_TOURISTS', 'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_DESERTFOLK', 'POPCYCLE_GROUP_SERVANTS'
+          'POPCYCLE_GROUP_CASUAL_AVERAGE (SF)', 'POPCYCLE_GROUP_CASUAL_AVERAGE (VEGAS)', 'POPCYCLE_GROUP_CASUAL_AVERAGE',
+          'POPCYCLE_GROUP_CASUAL_POOR (SF)', 'POPCYCLE_GROUP_CASUAL_POOR (VEGAS)', 'POPCYCLE_GROUP_CASUAL_POOR',
+          'POPCYCLE_GROUP_WORKERS (SF)', 'POPCYCLE_GROUP_WORKERS (VEGAS)', 'POPCYCLE_GROUP_WORKERS',
+          'POPCYCLE_GROUP_PARKFOLK (SF)', 'POPCYCLE_GROUP_PARKFOLK (VEGAS)', 'POPCYCLE_GROUP_PARKFOLK',
+          'POPCYCLE_GROUP_CLUBBERS (SF)', 'POPCYCLE_GROUP_CLUBBERS (VEGAS)', 'POPCYCLE_GROUP_CLUBBERS',
+          'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_DESERT_FOLK', 'POPCYCLE_GROUP_SERVANTS',
+          'Shopkeepers', 'Office workers', 'Husbands', 'Wives'
         ],
         min: 2,
         max: 4
@@ -2808,19 +3784,16 @@
     }
 
     function getContextAudioAndVoices(pedtype, stat, animGroup, gender) {
-      // 1. Emergency / Law Enforcement
       if (pedtype === 'COP' || pedtype === 'FIREMAN') {
         return { audioType: 'PED_TYPE_EMG', pool: VOICE_POOLS_CLASSIFIED.emgCop, pairMode: 'distinct' };
       }
       if (pedtype === 'MEDIC') {
         return { audioType: 'PED_TYPE_EMG', pool: VOICE_POOLS_CLASSIFIED.emgMedic, pairMode: 'distinct' };
       }
-      // 2. Gang Members
       if (/^GANG(\d+)$/.test(pedtype)) {
         const gIdx = (parseInt(pedtype.replace('GANG', ''), 10) - 1) % VOICE_POOLS_CLASSIFIED.gang.length;
         return { audioType: 'PED_TYPE_GANG', pool: VOICE_POOLS_CLASSIFIED.gang[gIdx], pairMode: 'distinct' };
       }
-      // 3. Female Civilians & Roles
       if (gender === 'F') {
         if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE' || animGroup === 'pro') {
           return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.femalePro, pairMode: 'same' };
@@ -2833,7 +3806,6 @@
         }
         return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.femaleAll, pairMode: 'same' };
       }
-      // 4. Male Civilians & Roles
       if (OLD_ANIM_GROUPS.has(animGroup) || stat === 'STAT_OLD_GUY') {
         return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleOld, pairMode: 'same' };
       }
@@ -2847,8 +3819,9 @@
     }
 
     document.getElementById('btnConfirmRandomizePed').addEventListener('click', async () => {
-      const bl = state.randomBlacklist;
+      const bl = store.randomBlacklist;
       const smartSync = document.getElementById('chkSmartContextSync').checked;
+      const forcedGender = document.getElementById('forceGenderMode')?.value || 'auto';
 
       const rawPools = {
         pedtype: PED_TYPES,
@@ -2860,23 +3833,28 @@
         radio: RADIO_STATIONS.map(r => r.v),
         audioType: AUDIO_TYPES,
         voice: ACTIVE_SPC_GA_VOICES.map(v => v.v),
-        pedGroup: state.pedGroupsMaster
+        pedGroup: store.pedGroupsMaster
       };
+
+      const rawMinGrp = Math.max(0, parseInt(document.getElementById('randPedGrpMin')?.value, 10) || 0);
+      const rawMaxGrp = Math.max(0, parseInt(document.getElementById('randPedGrpMax')?.value, 10) || 0);
+      const userMinGrp = Math.min(rawMinGrp, rawMaxGrp);
+      const userMaxGrp = Math.max(rawMinGrp, rawMaxGrp);
 
       const on = {};
       for (const k of ALL_PARAM_KEYS) on[k] = Boolean(document.getElementById(`rnd-${k}`)?.checked);
 
       closeModal('modalRandomizePed');
-      const targets = state.rows.filter(r => r.selected);
+      const targets = store.rows.filter(r => r.selected);
+      const largeBatch = targets.length > 250;
 
-      if (targets.length > 30) {
-        showLoading('Randomizing Selected Peds...', `Processing ${targets.length} peds`, 35);
-        await nextFrame();
+      if (largeBatch) {
+        showLoading('Randomizing Selected Peds...', `Processing ${targets.length} peds...`, 15);
+        await yieldFrame();
       }
 
-      for (const target of targets) {
+      await runChunkedTask(targets, (target) => {
         if (!smartSync) {
-          // RAW MODE: Global pool limited by blacklist (fallback to raw pool if all blacklisted)
           if (on.pedtype) target.pedtype = randomPick(resolveContextPool(rawPools.pedtype, bl.pedtype));
           if (on.stat) target.stat = randomPick(resolveContextPool(rawPools.stat, bl.stat));
           if (on.animGroup) target.animGroup = randomPick(resolveContextPool(rawPools.animGroup, bl.animGroup));
@@ -2889,15 +3867,20 @@
           if (on.voice1) target.voice1 = randomPick(resolveContextPool(rawPools.voice, bl.voice));
           if (on.voice2) target.voice2 = randomPick(resolveContextPool(rawPools.voice, bl.voice));
           if (on.pedGroup) {
-            const rawPgPool = resolveContextPool(rawPools.pedGroup.filter(g => g !== 'NONE'), bl.pedGroup, rawPools.pedGroup);
-            target.pedGroups = pickMultipleUnique(rawPgPool, 1, 3);
+            const excl = getExclusivePedGroupRule(target.pedtype);
+            if (excl.isExclusive) {
+              target.pedGroups = excl.groups.filter(g => !bl.pedGroup.has(g));
+            } else {
+              const generalGroups = rawPools.pedGroup.filter(g => g !== 'NONE' && !EXCLUSIVE_PED_GROUPS.has(g));
+              const rawPgPool = resolveContextPool(generalGroups, bl.pedGroup, generalGroups);
+              const targetCount = userMinGrp + Math.floor(Math.random() * (userMaxGrp - userMinGrp + 1));
+              target.pedGroups = weightedPickUniqueFromPool(rawPgPool, targetCount);
+            }
           }
-          continue;
+          rebuildRowSearchIndex(target);
+          return;
         }
 
-        // SMART CONTEXT SYNC MODE:
-        // Each ped evaluates its own locked/existing context -> applies blacklist -> overrides blacklist if context pool becomes empty
-        const forcedGender = document.getElementById('forceGenderMode')?.value || 'auto';
         const gender = (forcedGender === 'F' || forcedGender === 'M') ? forcedGender : detectPedGender(target);
 
         if (on.pedtype) {
@@ -2905,7 +3888,6 @@
           target.pedtype = randomPick(ptPool);
         }
 
-        // Re-evaluate gender in case pedtype was manually set or rolled to CIVFEMALE/PROSTITUTE
         const activeGender = (target.pedtype === 'CIVFEMALE' || target.pedtype === 'PROSTITUTE') ? 'F' : gender;
 
         if (on.stat) {
@@ -2954,19 +3936,40 @@
         }
 
         if (on.pedGroup) {
-          const pgCtx = getContextPedGroupPool(target.pedtype, target.stat, target.animGroup, activeGender);
-          const pgPool = resolveContextPool(
-            pgCtx.pool,
-            bl.pedGroup,
-            rawPools.pedGroup.filter(g => g !== 'NONE')
-          );
-          target.pedGroups = pickMultipleUnique(pgPool, pgCtx.min, pgCtx.max);
-        }
-      }
+          const excl = getExclusivePedGroupRule(target.pedtype);
+          if (excl.isExclusive) {
+            // Strict exclusivity: Gangs & Dealers only get their own single group; Cops/Medics/Firemen/Special get NONE
+            target.pedGroups = excl.groups.filter(g => !bl.pedGroup.has(g));
+          } else {
+            const targetCount = userMinGrp + Math.floor(Math.random() * (userMaxGrp - userMinGrp + 1));
+            const generalValidGroups = rawPools.pedGroup.filter(g => g !== 'NONE' && !EXCLUSIVE_PED_GROUPS.has(g));
+            const pgCtx = getContextPedGroupPool(target.pedtype, target.stat, target.animGroup);
+            const safePrimaryPool = pgCtx.pool.filter(g => !EXCLUSIVE_PED_GROUPS.has(g) && !bl.pedGroup.has(g));
 
-      if (targets.length > 30) updateLoading('Rendering updated table...', 85);
-      renderTable();
-      hideLoading();
+            // 1. Guarantee picking from the ped's primary context pool first (prioritizing (SF) & (VEGAS))
+            //    so setting Min >= 3 never dilutes roles like PROSTITUTE with unrelated groups.
+            const primaryPicked = weightedPickUniqueFromPool(safePrimaryPool, targetCount);
+
+            // 2. Only if the primary context pool has fewer items than targetCount, fill remaining slots from general groups.
+            if (primaryPicked.length < targetCount) {
+              const pickedSet = new Set(primaryPicked);
+              const remainingFallback = generalValidGroups.filter(g => !pickedSet.has(g) && !bl.pedGroup.has(g));
+              const extraPicked = weightedPickUniqueFromPool(remainingFallback, targetCount - primaryPicked.length);
+              target.pedGroups = [...primaryPicked, ...extraPicked];
+            } else {
+              target.pedGroups = primaryPicked;
+            }
+          }
+        }
+
+        rebuildRowSearchIndex(target);
+      }, {
+        onProgress: largeBatch ? (done, tot) => updateLoading(`Randomized ${done}/${tot} peds...`, 15 + (done / tot) * 80) : null
+      });
+
+      store.invalidateFilters();
+      viewport.render(true);
+      if (largeBatch) hideLoading();
       toast(
         `${smartSync ? 'Smart Context Sync' : 'Raw'} randomization applied across ${targets.length} selected peds!`,
         'success'
@@ -2974,14 +3977,14 @@
     });
 
     // =========================================================================
-    // 9. LAZY-LOADED 3D PED VIEWER (STRIPPED & ZERO MEMORY LEAK)
+    // 11. LAZY-LOADED 3D PED VIEWER (STRIPPED & ZERO MEMORY LEAK)
     // =========================================================================
     let cached3DLibs = null;
 
     async function load3DLibraries() {
       if (cached3DLibs) return cached3DLibs;
       if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-        throw new Error('Perangkat sedang offline. Sambungkan internet sebentar untuk memuat modul 3D Viewer dari CDN (esm.sh / jsdelivr).');
+        throw new Error('Device is offline. Connect to the internet briefly to load the 3D Viewer engine from CDN.');
       }
 
       try {
@@ -3003,7 +4006,7 @@
           cached3DLibs = { THREE, OrbitControls, DFFLoader, TXDLoader };
           return cached3DLibs;
         } catch (fallbackCdnErr) {
-          throw new Error(`Failed to load 3D library from primary (esm.sh) & backup (jsDelivr) CDN. Ensure internet connection is active when opening 3D Viewer (${fallbackCdnErr.message}).`);
+          throw new Error(`Failed to load 3D library from primary (esm.sh) & backup (jsDelivr) CDN (${fallbackCdnErr.message}).`);
         }
       }
     }
@@ -3111,7 +4114,6 @@
         const box = new THREE.Box3().setFromObject(modelPivot);
         if (box.isEmpty()) return;
         const center = box.getCenter(new THREE.Vector3());
-        // Center X/Z and place feet flush on Y = 0 grid
         modelRoot.position.set(-center.x, -box.min.y, -center.z);
         modelPivot.updateMatrixWorld(true);
       };
@@ -3168,7 +4170,7 @@
               textureMap = txdParser.parse(txdBuffer);
               texCount = textureMap ? textureMap.size : 0;
             } catch (txdErr) {
-              console.warn('TXD parse warning (PS2/Xbox/DXT/palette format), falling back to untextured DFF:', txdErr);
+              console.warn('TXD parse warning, falling back to untextured DFF:', txdErr);
               textureMap = null;
               txdNote = ' (TXD Compression/Palette Unsupported — Untextured)';
             }
@@ -3180,8 +4182,7 @@
             if (textureMap) dffParser.setTextureDictionary(textureMap);
             nextModel = dffParser.parse(dffBuffer);
           } catch (primaryErr) {
-            console.warn('Primary DFF parse failed, attempting safe-texture & geometry fallbacks:', primaryErr);
-            // Fallback Level 1A: Retry DFF WITH safe texture dictionary wrapper (preserves textures when RW Material Effects/Specular PLG fails)
+            console.warn('Primary DFF parse failed, attempting fallbacks:', primaryErr);
             if (textureMap && textureMap.size > 0) {
               try {
                 const safeTexDict = new Map();
@@ -3204,7 +4205,6 @@
               }
             }
 
-            // Fallback Level 1B: Parse DFF without TXD binding
             if (!nextModel) {
               try {
                 const retryParser = new DFFLoader();
@@ -3212,7 +4212,6 @@
                 fallbackNote = txdNote || ' (Untextured Mesh Fallback — Non-standard RW material section)';
               } catch (secondaryErr) {
                 console.warn('Geometry-only DFF parse also failed, showing proxy silhouette:', secondaryErr);
-                // Fallback Level 2: Render neutral studio proxy so viewer never crashes
                 const proxyGroup = new THREE.Group();
                 const bodyMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.65, wireframe: true });
                 const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 1.35, 16), bodyMat);
@@ -3247,7 +4246,6 @@
           modelPivot.add(modelRoot);
           scene.add(modelPivot);
 
-          // Auto-correct GTA SA Z-Up lying-down ped orientation
           modelPivot.updateMatrixWorld(true);
           const rawBox = new THREE.Box3().setFromObject(modelPivot);
           const rawSize = rawBox.getSize(new THREE.Vector3());
@@ -3263,10 +4261,7 @@
             ? `DFF Loaded${fallbackNote}`
             : (txdBuffer ? `DFF + TXD Loaded (${texCount} textures)` : 'DFF Loaded (No TXD)');
 
-          onStatus({
-            statusText: baseStatus,
-            stats
-          });
+          onStatus({ statusText: baseStatus, stats });
         },
         rotateUprightStep() {
           if (!modelPivot) return;
@@ -3345,7 +4340,7 @@
               `Verts: ${stats.vertices.toLocaleString()} • Tris: ${stats.triangles.toLocaleString()} • Meshes: ${stats.meshes} • Mats: ${stats.materials}`;
           }
         });
-        state.activeViewer = viewer;
+        store.activeViewer = viewer;
 
         const dffFile = await row.dffHandle.getFile();
         const txdFile = row.txdHandle ? await row.txdHandle.getFile() : null;
@@ -3363,9 +4358,9 @@
     }
 
     function closePedViewer() {
-      if (state.activeViewer) {
-        state.activeViewer.destroy();
-        state.activeViewer = null;
+      if (store.activeViewer) {
+        store.activeViewer.destroy();
+        store.activeViewer = null;
       }
       closeModal('modalViewer');
     }
@@ -3373,18 +4368,18 @@
     document.getElementById('btnCloseViewer').addEventListener('click', closePedViewer);
 
     document.getElementById('btnViewerRotate').addEventListener('click', () => {
-      state.activeViewer?.rotateUprightStep();
+      store.activeViewer?.rotateUprightStep();
     });
 
     document.getElementById('btnViewerWire').addEventListener('click', (e) => {
-      if (!state.activeViewer) return;
-      const next = !state.activeViewer.wireframe;
-      state.activeViewer.setWireframe(next);
+      if (!store.activeViewer) return;
+      const next = !store.activeViewer.wireframe;
+      store.activeViewer.setWireframe(next);
       e.target.style.background = next ? 'var(--accent)' : '';
     });
 
     document.getElementById('btnViewerReset').addEventListener('click', () => {
-      state.activeViewer?.resetCamera();
+      store.activeViewer?.resetCamera();
     });
 
     window.addEventListener('keydown', (e) => {
@@ -3394,49 +4389,181 @@
     });
 
     // =========================================================================
-    // 10. EXPORT OUTPUT (DIRECT FOLDER ON HTTPS + AUTOMATIC ZIP ON file://)
+    // 12. EXPORT OUTPUT (DIRECT FOLDER ON HTTPS + STREAMED ZIP ON file://) (R09, R13)
     // =========================================================================
     function generatePedsAddonsIde() {
-      const lines = ['peds'];
-      for (const r of state.rows) {
+      const len = store.rows.length;
+      const lines = new Array(len + 2);
+      lines[0] = 'peds';
+      for (let i = 0; i < len; i++) {
+        const r = store.rows[i];
         const safeModel = sanitizeGtaAssetName(r.modelName, String(r.id));
         const safeTxd = sanitizeGtaAssetName(r.txdName, safeModel);
-        lines.push(
-          `${r.id}, ${safeModel}, ${safeTxd}, ${r.pedtype}, ${r.stat}, ${r.animGroup}, ` +
-          `${r.carsMask},${r.flags}, ${r.animFile},${r.radio1},${r.radio2},${r.audioType},${r.voice1},${r.voice2}`
-        );
+        lines[i + 1] = `${r.id}, ${safeModel}, ${safeTxd}, ${r.pedtype}, ${r.stat}, ${r.animGroup}, ${r.carsMask},${r.flags}, ${r.animFile},${r.radio1},${r.radio2},${r.audioType},${r.voice1},${r.voice2}`;
       }
-      lines.push('end');
+      lines[len + 1] = 'end';
       return lines.join('\r\n') + '\r\n';
+    }
+
+    function generateVanillaIde() {
+      const rowById = new Map();
+      const rowByModelLower = new Map();
+      const writtenRowUids = new Set();
+
+      const formatIdeLine = (r) => {
+        const safeModel = sanitizeGtaAssetName(r.modelName, String(r.id));
+        const safeTxd = sanitizeGtaAssetName(r.txdName, safeModel);
+        return `${r.id}, ${safeModel}, ${safeTxd}, ${r.pedtype}, ${r.stat}, ${r.animGroup}, ${r.carsMask},${r.flags}, ${r.animFile},${r.radio1},${r.radio2},${r.audioType},${r.voice1},${r.voice2}`;
+      };
+
+      for (const r of store.rows) {
+        rowById.set(r.id, r);
+        rowByModelLower.set(r.modelName.toLowerCase(), r);
+      }
+
+      if (!store.rawVanillaIdeText || !store.rawVanillaIdeText.trim()) {
+        return generatePedsAddonsIde();
+      }
+
+      const lines = store.rawVanillaIdeText.split(/\r?\n/);
+      const out = [];
+      let inPeds = false;
+      let appendedNew = false;
+
+      const appendRemainingRows = () => {
+        if (appendedNew) return;
+        appendedNew = true;
+        for (const r of store.rows) {
+          if (!writtenRowUids.has(r.uid)) {
+            writtenRowUids.add(r.uid);
+            out.push(formatIdeLine(r));
+          }
+        }
+      };
+
+      for (const rawLine of lines) {
+        const clean = rawLine.split('#')[0].trim();
+        const lower = clean.toLowerCase();
+        if (lower === 'peds') {
+          inPeds = true;
+          out.push(rawLine);
+          continue;
+        }
+        if (lower === 'end' && inPeds) {
+          appendRemainingRows();
+          inPeds = false;
+          out.push(rawLine);
+          continue;
+        }
+        if (inPeds && clean && /^\d+\s*,/.test(clean)) {
+          const tokens = clean.split(',').map(t => t.trim());
+          const idNum = parseInt(tokens[0], 10);
+          const origModelLow = (tokens[1] || '').toLowerCase();
+          const matched = rowById.get(idNum) || rowByModelLower.get(origModelLow);
+          if (matched && !writtenRowUids.has(matched.uid)) {
+            writtenRowUids.add(matched.uid);
+            out.push(formatIdeLine(matched));
+          }
+          // If row was deleted in the sheet, omit it from output
+          continue;
+        }
+        out.push(rawLine);
+      }
+
+      appendRemainingRows();
+      return out.join('\r\n');
     }
 
     function generatePedGrpDat() {
       const addByGroup = new Map();
-      for (const r of state.rows) {
+      const addByGroupLower = new Map();
+
+      for (let i = 0; i < store.rows.length; i++) {
+        const r = store.rows[i];
         const groups = Array.isArray(r.pedGroups) ? r.pedGroups : [];
-        for (const grp of groups) {
+        const modelLow = r.modelName.toLowerCase();
+        for (let g = 0; g < groups.length; g++) {
+          const grp = normalizePedGroupName(groups[g]);
           if (!grp || grp === 'NONE') continue;
-          if (!addByGroup.has(grp)) addByGroup.set(grp, []);
-          const list = addByGroup.get(grp);
-          if (!list.some(x => x.toLowerCase() === r.modelName.toLowerCase())) {
-            list.push(r.modelName);
+          if (!addByGroup.has(grp)) {
+            addByGroup.set(grp, []);
+            addByGroupLower.set(grp, new Set());
+          }
+          const seen = addByGroupLower.get(grp);
+          if (!seen.has(modelLow)) {
+            seen.add(modelLow);
+            addByGroup.get(grp).push(r.modelName);
           }
         }
       }
 
-      // Mode 1: Original vanilla pedgrp.dat provided -> append new add-on peds to matching group lines
-      if (state.vanillaPedGrpText && state.vanillaPedGrpText.trim().length > 0) {
-        const usedGroups = new Set();
-        const outLines = state.vanillaPedGrpText.split(/\r?\n/).map(rawLine => {
+      // In Vanilla Mode, rebuild directly from the loaded vanilla pedgrp.dat template
+      if (store.editorMode === 'vanilla' && store.rawVanillaPedGrpText) {
+        const rowByModelLower = new Map();
+        for (let i = 0; i < store.rows.length; i++) {
+          const r = store.rows[i];
+          rowByModelLower.set(r.modelName.toLowerCase(), r);
+        }
+        const placedInGroup = new Map();
+
+        const outLines = store.rawVanillaPedGrpText.split(/\r?\n/).map(rawLine => {
           const trimmed = rawLine.trim();
           if (!trimmed || trimmed.startsWith('#')) return rawLine;
           const hashIdx = rawLine.indexOf('#');
           const dataPart = hashIdx >= 0 ? rawLine.slice(0, hashIdx).trim() : trimmed;
-          const groupName = hashIdx >= 0 ? rawLine.slice(hashIdx + 1).trim() : '';
-          if (!groupName) return rawLine;
+          const rawGroupLabel = hashIdx >= 0 ? rawLine.slice(hashIdx + 1).trim() : '';
+          const canonGroup = normalizePedGroupName(rawGroupLabel);
+          if (!canonGroup) return rawLine;
 
-          usedGroups.add(groupName);
-          const extras = addByGroup.get(groupName) || [];
+          if (!placedInGroup.has(canonGroup)) placedInGroup.set(canonGroup, new Set());
+          const placedSet = placedInGroup.get(canonGroup);
+          const targetSetLower = addByGroupLower.get(canonGroup) || new Set();
+
+          const existingTokens = dataPart.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+          const kept = [];
+          for (const tok of existingTokens) {
+            const low = tok.toLowerCase();
+            const rowObj = rowByModelLower.get(low);
+            if (rowObj) {
+              // Keep only if this ped still has this group assigned
+              if (targetSetLower.has(low) && !placedSet.has(low)) {
+                placedSet.add(low);
+                kept.push(rowObj.modelName);
+              }
+            } else {
+              kept.push(tok);
+            }
+          }
+
+          // Append any newly assigned peds for this group
+          const targetList = addByGroup.get(canonGroup) || [];
+          for (const m of targetList) {
+            const low = m.toLowerCase();
+            if (!placedSet.has(low)) {
+              placedSet.add(low);
+              kept.push(m);
+            }
+          }
+
+          return `${kept.join(', ')}\t\t# ${rawGroupLabel}`;
+        });
+
+        return outLines.join('\r\n');
+      }
+
+      if (store.vanillaPedGrpText && store.vanillaPedGrpText.trim().length > 0) {
+        const usedGroups = new Set();
+        const outLines = store.vanillaPedGrpText.split(/\r?\n/).map(rawLine => {
+          const trimmed = rawLine.trim();
+          if (!trimmed || trimmed.startsWith('#')) return rawLine;
+          const hashIdx = rawLine.indexOf('#');
+          const dataPart = hashIdx >= 0 ? rawLine.slice(0, hashIdx).trim() : trimmed;
+          const rawGroupLabel = hashIdx >= 0 ? rawLine.slice(hashIdx + 1).trim() : '';
+          const canonGroup = normalizePedGroupName(rawGroupLabel);
+          if (!canonGroup) return rawLine;
+
+          usedGroups.add(canonGroup);
+          const extras = addByGroup.get(canonGroup) || [];
           if (extras.length === 0) return rawLine;
 
           const existing = dataPart.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
@@ -3444,10 +4571,9 @@
           for (const m of extras) {
             if (!existingLow.has(m.toLowerCase())) existing.push(m);
           }
-          return `${existing.join(', ')}\t\t# ${groupName}`;
+          return `${existing.join(', ')}\t\t# ${rawGroupLabel}`;
         });
 
-        // Append any custom groups not present in vanilla pedgrp.dat
         for (const [grpName, members] of addByGroup.entries()) {
           if (!usedGroups.has(grpName) && members.length > 0) {
             outLines.push(`${members.join(', ')}\t\t# ${grpName}`);
@@ -3456,20 +4582,23 @@
         return outLines.join('\r\n');
       }
 
-      // Mode 2: Add-on only pedgrp.dat
       const grouped = new Map();
-      for (const g of state.pedGroupsMaster) {
+      for (const g of store.pedGroupsMaster) {
         if (g !== 'NONE') grouped.set(g, []);
       }
-      for (const [g, set] of state.rawPedGrpExtras.entries()) {
+      for (const [g, set] of store.rawPedGrpExtras.entries()) {
         if (!grouped.has(g)) grouped.set(g, []);
         grouped.get(g).push(...set);
       }
       for (const [grpName, members] of addByGroup.entries()) {
         if (!grouped.has(grpName)) grouped.set(grpName, []);
         const list = grouped.get(grpName);
+        const listLow = new Set(list.map(x => x.toLowerCase()));
         for (const m of members) {
-          if (!list.some(x => x.toLowerCase() === m.toLowerCase())) list.push(m);
+          if (!listLow.has(m.toLowerCase())) {
+            listLow.add(m.toLowerCase());
+            list.push(m);
+          }
         }
       }
 
@@ -3481,7 +4610,6 @@
       return lines.join('\r\n') + '\r\n';
     }
 
-    // Pure-JS Zero-Dependency ZIP Writer (STORE mode) for local file:// export
     const CRC32_TABLE = (() => {
       const tbl = new Uint32Array(256);
       for (let i = 0; i < 256; i++) {
@@ -3502,23 +4630,23 @@
 
     function buildZipBlob(entries) {
       const enc = new TextEncoder();
-      const localParts = [];
-      const centralParts = [];
+      const localParts = new Array(entries.length * 2);
+      const centralParts = new Array(entries.length);
       let offset = 0;
 
-      for (const item of entries) {
+      for (let idx = 0; idx < entries.length; idx++) {
+        const item = entries[idx];
         const nameBytes = enc.encode(item.path);
         const crc = item.crc;
         const size = item.size;
         const payload = item.blob || item.data;
 
-        // Local File Header (30 bytes + nameBytes)
         const lfh = new Uint8Array(30 + nameBytes.length);
         const ldv = new DataView(lfh.buffer);
         ldv.setUint32(0, 0x04034b50, true);
         ldv.setUint16(4, 20, true);
-        ldv.setUint16(6, 0x0800, true); // UTF-8
-        ldv.setUint16(8, 0, true);      // STORE (uncompressed)
+        ldv.setUint16(6, 0x0800, true);
+        ldv.setUint16(8, 0, true);
         ldv.setUint16(10, 0, true);
         ldv.setUint16(12, 0, true);
         ldv.setUint32(14, crc, true);
@@ -3528,9 +4656,9 @@
         ldv.setUint16(28, 0, true);
         lfh.set(nameBytes, 30);
 
-        localParts.push(lfh, payload);
+        localParts[idx * 2] = lfh;
+        localParts[idx * 2 + 1] = payload;
 
-        // Central Directory Header (46 bytes + nameBytes)
         const cdh = new Uint8Array(46 + nameBytes.length);
         const cdv = new DataView(cdh.buffer);
         cdv.setUint32(0, 0x02014b50, true);
@@ -3552,12 +4680,12 @@
         cdv.setUint32(42, offset, true);
         cdh.set(nameBytes, 46);
 
-        centralParts.push(cdh);
+        centralParts[idx] = cdh;
         offset += lfh.length + size;
       }
 
       let cdSize = 0;
-      for (const c of centralParts) cdSize += c.length;
+      for (let i = 0; i < centralParts.length; i++) cdSize += centralParts[i].length;
 
       const eocd = new Uint8Array(22);
       const edv = new DataView(eocd.buffer);
@@ -3581,47 +4709,124 @@
     }
 
     async function copyBinaryHandle(srcHandle, destDirHandle, destFilename) {
-      // Read entire source file into memory BEFORE calling createWritable()
-      // to prevent 0-byte truncation when exporting into the same imported folder
       const file = await srcHandle.getFile();
-      const buf = await file.arrayBuffer();
       const destFh = await destDirHandle.getFileHandle(destFilename, { create: true });
       const writable = await destFh.createWritable();
-      await writable.write(buf);
-      await writable.close();
+      if (typeof file.stream === 'function') {
+        await file.stream().pipeTo(writable);
+      } else {
+        await writable.write(await file.arrayBuffer());
+        await writable.close();
+      }
+    }
+
+    function updateExportLimitWarningUI() {
+      const box = document.getElementById('pedGrpLimitReport');
+      if (!box) return;
+      const mergedGrpText = generatePedGrpDat();
+      const { maxCount, maxGroups } = store.analyzeMergedPedGrp(mergedGrpText);
+      const groupNamesStr = maxGroups.length > 0 ? maxGroups.join(', ') : 'None';
+      const recommendedLimit = Math.max(32, Math.ceil((maxCount + 5) / 5) * 5);
+
+      if (maxCount > 23) {
+        box.className = 'limit-warn-box';
+        box.innerHTML = `
+          <strong>⚠️ Merged <code>pedgrp.dat</code> Peak Limit Warning:</strong><br/>
+          Highest ped count in a single <code>pedgrp</code>: <strong>${maxCount} peds</strong> (<code>${escapeHtml(groupNamesStr)}</code>).<br/>
+          Default GTA SA only allows <strong>23 peds</strong> per group. Open <code>fastman92limitAdjuster.ini</code> and increase the <strong>peds per pedgrp limit</strong> (<code>Pedgrp peds limit</code>) to <strong>above ${maxCount}</strong> (recommended: <strong>${recommendedLimit}+</strong>) to prevent crashes or missing spawns!
+        `;
+      } else {
+        box.className = 'limit-warn-box ok';
+        box.innerHTML = `
+          <strong>✓ Merged <code>pedgrp.dat</code> Ped Count Check:</strong><br/>
+          Highest ped count in a single <code>pedgrp</code>: <strong>${maxCount} peds</strong> (<code>${escapeHtml(groupNamesStr)}</code>) — within default GTA SA's 23-ped limit.
+        `;
+      }
     }
 
     document.getElementById('vanillaPedGrpInput').addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
       const statusEl = document.getElementById('vanillaPedGrpStatus');
       if (!file) {
-        state.vanillaPedGrpText = '';
+        store.vanillaPedGrpText = '';
         statusEl.textContent = 'Not attached — pedgrp.dat will only contain add-on peds.';
         statusEl.style.color = 'var(--text-muted)';
+        updateExportLimitWarningUI();
+        updateStatsBar();
         return;
       }
-      state.vanillaPedGrpText = await file.text();
+      store.vanillaPedGrpText = await file.text();
       statusEl.textContent = `✓ Loaded "${file.name}" — Add-on peds will be merged into vanilla groups!`;
       statusEl.style.color = '#34d399';
+      updateExportLimitWarningUI();
+      updateStatsBar();
     });
 
     async function exportOutput() {
-      if (state.rows.length === 0) {
+      if (store.rows.length === 0) {
         toast('No ped entries available to export.', 'warning');
         return;
       }
 
       const ideText = generatePedsAddonsIde();
       const grpText = generatePedGrpDat();
+      const { maxCount, maxGroups } = store.analyzeMergedPedGrp(grpText);
       const loaderText = 'IDE DATA\\MAPS\\peds_addons.ide\r\n';
-      const totalRows = state.rows.length;
+      const totalRows = store.rows.length;
 
-      // 1. Direct directory write (GitHub Pages / localhost)
+      // VANILLA MODE: Pick target folder and drop modified ped.ide & pedgrp.dat directly
+      if (store.editorMode === 'vanilla') {
+        const ideText = generateVanillaIde();
+        const ideFilename = store.vanillaIdeFilename || 'ped.ide';
+
+        if (window.isSecureContext && typeof window.showDirectoryPicker === 'function') {
+          try {
+            const outDir = await window.showDirectoryPicker({ mode: 'readwrite' });
+            showLoading('Exporting Vanilla Files...', `Writing ${ideFilename} & pedgrp.dat...`, 35);
+            await yieldFrame();
+
+            await writeTextFile(outDir, ideFilename, ideText);
+            await writeTextFile(outDir, 'pedgrp.dat', grpText);
+
+            hideLoading();
+            toast(`Exported ${ideFilename} & pedgrp.dat directly into /${outDir.name}!`, 'success');
+            if (maxCount > 23) {
+              toast(`Warning: Max ${maxCount} peds in "${maxGroups[0]}". Set fastman92limitAdjuster pedgrp limit > ${maxCount}!`, 'warning');
+            }
+            return;
+          } catch (err) {
+            hideLoading();
+            if (err.name === 'AbortError') return;
+            console.warn('Direct folder export blocked, falling back to browser download:', err);
+          }
+        }
+
+        // Fallback download for file:// or non-supporting browsers
+        const downloadText = (filename, content) => {
+          const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 4000);
+        };
+        downloadText(ideFilename, ideText);
+        setTimeout(() => downloadText('pedgrp.dat', grpText), 250);
+        toast(`Downloaded modified ${ideFilename} & pedgrp.dat!`, 'success');
+        if (maxCount > 23) {
+          toast(`Warning: Max ${maxCount} peds in "${maxGroups[0]}". Set fastman92limitAdjuster pedgrp limit > ${maxCount}!`, 'warning');
+        }
+        return;
+      }
+
       if (window.isSecureContext && typeof window.showDirectoryPicker === 'function') {
         try {
           const outRoot = await window.showDirectoryPicker({ mode: 'readwrite' });
           showLoading('Exporting to Folder...', 'Writing IDE, pedgrp.dat & loader.txt...', 5);
-          await nextFrame();
+          await yieldFrame();
 
           const outDataDir = await outRoot.getDirectoryHandle('data', { create: true });
           const outModelsDir = await outRoot.getDirectoryHandle('models', { create: true });
@@ -3633,23 +4838,22 @@
 
           let copiedDff = 0;
           let copiedTxd = 0;
-          for (let i = 0; i < totalRows; i++) {
-            const r = state.rows[i];
+
+          await runParallelTask(store.rows, async (r) => {
             const safeModel = sanitizeGtaAssetName(r.modelName, String(r.id));
             const safeTxd = sanitizeGtaAssetName(r.txdName, safeModel);
-            const pct = 10 + Math.round(((i + 1) / totalRows) * 88);
-            updateLoading(`Syncing [${i + 1}/${totalRows}]: ${safeModel}.dff / .txd`, pct);
-            if (i % 5 === 0) await nextFrame();
-
+            const tasks = [];
             if (r.dffHandle) {
-              await copyBinaryHandle(r.dffHandle, outGta3Dir, `${safeModel}.dff`);
-              copiedDff++;
+              tasks.push(copyBinaryHandle(r.dffHandle, outGta3Dir, `${safeModel}.dff`).then(() => { copiedDff++; }));
             }
             if (r.txdHandle) {
-              await copyBinaryHandle(r.txdHandle, outGta3Dir, `${safeTxd}.txd`);
-              copiedTxd++;
+              tasks.push(copyBinaryHandle(r.txdHandle, outGta3Dir, `${safeTxd}.txd`).then(() => { copiedTxd++; }));
             }
-          }
+            if (tasks.length > 0) await Promise.all(tasks);
+          }, {
+            concurrency: 12,
+            onProgress: (done, tot) => updateLoading(`Syncing [${done}/${tot}] models...`, 10 + Math.round((done / tot) * 88))
+          });
 
           hideLoading();
           toast(
@@ -3664,10 +4868,9 @@
         }
       }
 
-      // 2. Local file:// fallback -> Structured ZIP with live progress bar
       try {
         showLoading('Building Output ZIP...', 'Packing data/ config files...', 5);
-        await nextFrame();
+        await yieldFrame();
 
         const enc = new TextEncoder();
         const makeTextZipEntry = (path, text) => {
@@ -3683,40 +4886,46 @@
 
         let copiedDff = 0;
         let copiedTxd = 0;
-        for (let i = 0; i < totalRows; i++) {
-          const r = state.rows[i];
+
+        await runParallelTask(store.rows, async (r) => {
           const safeModel = sanitizeGtaAssetName(r.modelName, String(r.id));
           const safeTxd = sanitizeGtaAssetName(r.txdName, safeModel);
-          const pct = 10 + Math.round(((i + 1) / totalRows) * 75);
-          updateLoading(`Indexing [${i + 1}/${totalRows}]: ${safeModel}`, pct);
-          if (i % 5 === 0) await nextFrame();
+          const tasks = [];
 
           if (r.dffHandle) {
-            const fileObj = await r.dffHandle.getFile();
-            const crc = crc32Bytes(new Uint8Array(await fileObj.arrayBuffer()));
-            zipEntries.push({
-              path: `models/gta3/${safeModel}.dff`,
-              blob: fileObj,
-              crc,
-              size: fileObj.size
-            });
-            copiedDff++;
+            tasks.push((async () => {
+              const fileObj = await r.dffHandle.getFile();
+              const crc = crc32Bytes(new Uint8Array(await fileObj.arrayBuffer()));
+              zipEntries.push({
+                path: `models/gta3/${safeModel}.dff`,
+                blob: fileObj,
+                crc,
+                size: fileObj.size
+              });
+              copiedDff++;
+            })());
           }
           if (r.txdHandle) {
-            const fileObj = await r.txdHandle.getFile();
-            const crc = crc32Bytes(new Uint8Array(await fileObj.arrayBuffer()));
-            zipEntries.push({
-              path: `models/gta3/${safeTxd}.txd`,
-              blob: fileObj,
-              crc,
-              size: fileObj.size
-            });
-            copiedTxd++;
+            tasks.push((async () => {
+              const fileObj = await r.txdHandle.getFile();
+              const crc = crc32Bytes(new Uint8Array(await fileObj.arrayBuffer()));
+              zipEntries.push({
+                path: `models/gta3/${safeTxd}.txd`,
+                blob: fileObj,
+                crc,
+                size: fileObj.size
+              });
+              copiedTxd++;
+            })());
           }
-        }
+          if (tasks.length > 0) await Promise.all(tasks);
+        }, {
+          concurrency: 12,
+          onProgress: (done, tot) => updateLoading(`Indexing [${done}/${tot}] models...`, 10 + Math.round((done / tot) * 75))
+        });
 
         updateLoading('Compressing & generating ZIP archive...', 92);
-        await nextFrame();
+        await yieldFrame();
 
         const blob = buildZipBlob(zipEntries);
         const url = URL.createObjectURL(blob);
@@ -3738,33 +4947,33 @@
     }
 
     // =========================================================================
-    // 11. BUTTON & FILTER BINDINGS
+    // 13. BUTTON & FILTER BINDINGS WITH DEBOUNCED SEARCH (R06 & R12)
     // =========================================================================
     document.getElementById('btnImportFolder').addEventListener('click', triggerImportFolder);
     document.getElementById('btnEmptyImport').addEventListener('click', triggerImportFolder);
 
     document.getElementById('btnEmptyNew').addEventListener('click', () => {
-      state.rows.push(createDefaultPed({ id: 14000, modelName: '14000', txdName: '14000' }));
-      renderTable();
+      store.addRow(createDefaultPed({ id: 14000, modelName: '14000', txdName: '14000' }));
+      viewport.render(true);
     });
 
     document.getElementById('btnAddRow').addEventListener('click', () => {
       let nextId = 14000;
-      for (const r of state.rows) {
-        if (r.id >= nextId) nextId = r.id + 1;
+      for (let i = 0; i < store.rows.length; i++) {
+        if (store.rows[i].id >= nextId) nextId = store.rows[i].id + 1;
       }
-      state.rows.push(createDefaultPed({
+      store.addRow(createDefaultPed({
         id: nextId,
         modelName: String(nextId),
         txdName: String(nextId)
       }));
-      renderTable();
-      const wrapper = document.getElementById('sheetWrapper');
-      wrapper.scrollTop = wrapper.scrollHeight;
+      viewport.render(true);
+      sheetWrapper.scrollTop = sheetWrapper.scrollHeight;
+      viewport.render(true);
     });
 
     document.getElementById('btnAutoRename').addEventListener('click', () => {
-      if (state.rows.length === 0) return;
+      if (store.rows.length === 0) return;
       openModal('modalAutoRename');
     });
 
@@ -3777,21 +4986,56 @@
 
     document.getElementById('btnCheckClash').addEventListener('click', fixClashesOnly);
 
+    document.getElementById('btnOpenVanillaModal').addEventListener('click', openVanillaModeModal);
+    document.getElementById('btnEmptyVanillaMode').addEventListener('click', openVanillaModeModal);
+
     document.getElementById('btnClearAll').addEventListener('click', () => {
-      if (state.rows.length === 0) return;
-      if (!confirm('Clear all rows in the current sheet?')) return;
-      state.rows = [];
-      state.rawPedGrpExtras.clear();
-      state.lastCheckedIndex = null;
-      renderTable();
-      toast('All sheet data has been cleared.', 'info');
+      if (store.rows.length === 0) return;
+      if (!confirm('Clear all rows in the current sheet and return to mode selection?')) return;
+      store.clearAll();
+      store.rawVanillaIdeText = '';
+      store.rawVanillaPedGrpText = '';
+      store.vanillaPedGrpText = '';
+      const vanillaInput = document.getElementById('vanillaPedGrpInput');
+      if (vanillaInput) vanillaInput.value = '';
+      const vanillaStatus = document.getElementById('vanillaPedGrpStatus');
+      if (vanillaStatus) {
+        vanillaStatus.textContent = 'Not attached — pedgrp.dat will only contain your add-on peds. Attach your game\'s original pedgrp.dat to merge new peds without replacing vanilla spawns!';
+        vanillaStatus.style.color = 'var(--text-muted)';
+      }
+      setEditorMode('addon');
+      document.getElementById('folderLabel').textContent = 'No folder or files selected';
+      sheetWrapper.scrollTop = 0;
+      viewport.render(true);
+      toast('All sheet data cleared. Select a mode to begin.', 'info');
+    });
+
+    // Global Ctrl+F / Cmd+F Shortcut -> Focus Search Input
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        const searchEl = document.getElementById('searchInput');
+        if (searchEl) {
+          searchEl.focus();
+          searchEl.select();
+        }
+      }
     });
 
     document.getElementById('btnExportFolder').addEventListener('click', () => {
-      if (state.rows.length === 0) {
+      if (store.rows.length === 0) {
         toast('No ped entries available to export.', 'warning');
         return;
       }
+      const isVanilla = store.editorMode === 'vanilla';
+      document.getElementById('exportModalTitle').textContent = isVanilla
+        ? '💾 Export Modified Vanilla Files (IDE + GRP)'
+        : '💾 Export Add-On Output';
+      document.getElementById('addonVanillaAttachRow').style.display = isVanilla ? 'none' : 'flex';
+      document.getElementById('vanillaModeExportNote').style.display = isVanilla ? 'block' : 'none';
+      document.getElementById('vanillaExportIdeName').textContent = store.vanillaIdeFilename || 'ped.ide';
+
+      updateExportLimitWarningUI();
       openModal('modalExportOptions');
     });
 
@@ -3799,14 +5043,39 @@
       closeModal('modalExportOptions');
       exportOutput();
     });
-    
-    document.getElementById('searchInput').addEventListener('input', renderTable);
-    document.getElementById('filterGroup').addEventListener('change', renderTable);
-    document.getElementById('filterFileStatus').addEventListener('change', renderTable);
+
+    // Debounced search input with immediate clear/Enter (R06 & R12)
+    let searchDebounceTimer = 0;
+    const searchInputEl = document.getElementById('searchInput');
+
+    function applyFilterAndResetScroll() {
+      store.lastCheckedIndex = null;
+      sheetWrapper.scrollTop = 0;
+      viewport.render(true);
+    }
+
+    searchInputEl.addEventListener('input', () => {
+      clearTimeout(searchDebounceTimer);
+      if (searchInputEl.value.trim() === '') {
+        applyFilterAndResetScroll();
+        return;
+      }
+      searchDebounceTimer = setTimeout(applyFilterAndResetScroll, 120);
+    });
+
+    searchInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        clearTimeout(searchDebounceTimer);
+        applyFilterAndResetScroll();
+      }
+    });
+
+    document.getElementById('filterGroup').addEventListener('change', applyFilterAndResetScroll);
+    document.getElementById('filterFileStatus').addEventListener('change', applyFilterAndResetScroll);
 
     // Initialize empty view
     refreshPedGroupDropdownFilter();
-    renderTable();
+    viewport.render(true);
   </script>
 </body>
 </html>
