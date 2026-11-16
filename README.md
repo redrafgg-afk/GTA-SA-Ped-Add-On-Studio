@@ -101,8 +101,8 @@ Adding brand-new pedestrians—or customizing existing vanilla pedestrian behavi
 
 This tool is a pure client-side static HTML/JavaScript file (`index.html`) with zero backend servers, zero tracking, and zero external data uploads—all file reading and ZIP packaging happen locally inside your browser.
 
-- **VirusTotal Scan Report (0/60+ Clean):** [View Live VirusTotal Analysis](https://www.virustotal.com/gui/file/a1723ac3c646ea075092938fcdcea52b5ede7937ae22142b61420436e589a84f)
-- **SHA-256 Checksum:** `a1723ac3c646ea075092938fcdcea52b5ede7937ae22142b61420436e589a84f`
+- **VirusTotal Scan Report (0/60+ Clean):** [View Live VirusTotal Analysis](https://www.virustotal.com/gui/file/40443f3801095c804501e7ed75d3919667363e990fa8fe5664b87ea7e90e35e2)
+- **SHA-256 Checksum:** `40443f3801095c804501e7ed75d3919667363e990fa8fe5664b87ea7e90e35e2`
 
 ---
 
