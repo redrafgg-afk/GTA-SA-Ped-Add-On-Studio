@@ -914,16 +914,36 @@
       background: linear-gradient(90deg, var(--accent), var(--success));
       transition: width 0.1s ease;
     }
-  </style>
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://esm.sh/three@0.170.0",
-        "three/addons/": "https://esm.sh/three@0.170.0/examples/jsm/",
-        "dff-loader": "https://esm.sh/dff-loader@1.0.1?external=three"
-      }
+
+    /* Global Smart Hover Tooltip */
+    #smartTooltip {
+      position: fixed;
+      z-index: 9999;
+      max-width: 320px;
+      background: rgba(11, 14, 21, 0.96);
+      border: 1px solid #41516b;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.72);
+      color: var(--text-main);
+      padding: 8px 11px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      line-height: 1.45;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.12s ease, transform 0.12s ease;
     }
-  </script>
+    #smartTooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .icon-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
 
@@ -933,42 +953,45 @@
   <!-- TOP TOOLBAR -->
   <header class="topbar">
     <div class="brand">
-      <div class="brand-badge">GTA SA</div>
+      <div class="brand-badge" data-tip="Built specifically for managing GTA San Andreas Add-On Peds (14000+) & Vanilla Peds.">GTA SA</div>
       <div>
         <div style="display:flex; align-items:center; gap:8px;">
           <h1>Ped Studio</h1>
-          <span class="mode-pill-badge" id="activeModeBadge">ADD-ON MODE</span>
+          <span class="mode-pill-badge" id="activeModeBadge" data-tip="Current active working mode: Add-On Mode (ID 14000+ with 3D DFF/TXD) or Vanilla IDE+GRP Mode.">ADD-ON MODE</span>
         </div>
         <span id="folderLabel">No folder or files selected</span>
       </div>
     </div>
 
     <div class="toolbar-group">
-      <button id="btnImportFolder" class="btn-primary" title="Select root folder containing data/, models/gta3/, and optional Add/">
+      <button id="btnImportFolder" class="btn-primary" data-tip="Select the root folder containing data/, models/gta3/, and an optional Add/ folder to import ped entries along with .dff/.txd files.">
         📂 Import Folder
       </button>
-      <button id="btnOpenVanillaModal" title="Load vanilla ped.ide and pedgrp.dat one by one (No DFF/TXD)">
+      <button id="btnOpenVanillaModal" data-tip="Load base-game GTA SA ped.ide and pedgrp.dat files individually to edit original peds directly (without 3D preview).">
         🛠️ Load Vanilla IDE+GRP
       </button>
-      <button id="btnAddRow" title="Add a new ped row at the bottom">
+      <button id="btnAddRow" data-tip="Append 1 new ped row at the bottom of the sheet with the next available ID.">
         ➕ Add Row
       </button>
-      <button id="btnAutoRename" class="btn-warning" title="Auto-rename IDs & DFF/TXD files sequentially from top to bottom (14000+)">
+      <button id="btnAutoRename" class="btn-warning" data-tip="Sequentially renumber ID, ModelName, and TxdName from top to bottom (starting at 14000+) while synchronizing DFF/TXD files.">
         🔢 Auto-Rename (14000+)
       </button>
-      <button id="btnCheckClash" title="Check & fix ID clashes or duplicate names">
+      <button id="btnCheckClash" data-tip="Automatically detect and resolve ID collisions, duplicate Model/TXD names, illegal characters, or names overriding vanilla GTA SA peds.">
         🛡️ Check & Fix Clashes
       </button>
-      <button id="btnCopyFromPed" disabled title="Select one or more peds to copy properties from a reference ped">
+      <button id="btnCopyFromPed" disabled data-tip="Copy parameters (Pedtype, Stat, AnimGroup, Voice, Group, etc.) from one reference ped to all checked peds.">
         📋 Copy Data From Ped (<span id="selCountLabel">0</span>)
       </button>
-      <button id="btnRandomizeSelected" disabled title="Randomize selected parameter segments for checked peds">
+      <button id="btnRandomizeSelected" disabled data-tip="Bulk-randomize parameters for all checked peds using Smart Context Sync (matching gender & role) and Blacklist filters.">
         🎲 Randomize Selected (<span id="randCountLabel">0</span>)
       </button>
-      <button id="btnClearAll" class="btn-danger" title="Clear entire table and return to mode selection">
-        🗑️ Clear All
+      <button id="btnDeleteSelected" class="btn-danger" disabled data-tip="Delete all checked ped rows and shift subsequent ped IDs up to keep numbering contiguous without gaps.">
+        🗑️ Delete Selected (<span id="delCountLabel">0</span>)
       </button>
-      <button id="btnExportFolder" class="btn-success" title="Export modified files">
+      <button id="btnClearAll" class="btn-danger" data-tip="Clear all rows and reset the current session, returning to the mode selection screen.">
+        🧹 Clear All
+      </button>
+      <button id="btnExportFolder" class="btn-success" data-tip="Export edited output to a target folder (or download ZIP): peds_addons.ide, pedgrp.dat, loader.txt, and synchronized .dff/.txd files.">
         💾 Export Output
       </button>
     </div>
@@ -977,11 +1000,11 @@
   <!-- FILTER & STATUS SUBBAR -->
   <div class="subbar">
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Search ID, ModelName, Pedtype, Voice, Group..." style="width: 260px;" />
-      <select id="filterGroup">
+      <input type="text" id="searchInput" placeholder="Search ID, ModelName, Pedtype, Voice, Group..." style="width: 260px;" data-tip="Search peds by ID, ModelName, TxdName, Pedtype, Stat, Voice, Ped Group, or source folder (Shortcut: Ctrl+F)." />
+      <select id="filterGroup" data-tip="Filter peds by spawn group in pedgrp.dat (or unassigned peds / NONE).">
         <option value="">All Ped Groups</option>
       </select>
-      <select id="filterFileStatus">
+      <select id="filterFileStatus" data-tip="Filter peds by 3D file pair completeness (.dff and .txd).">
         <option value="">All File Statuses</option>
         <option value="both">DFF + TXD Complete</option>
         <option value="partial">Missing DFF / TXD</option>
@@ -990,10 +1013,10 @@
     </div>
 
     <div class="stats-pills">
-      <span class="pill">Total Peds: <strong id="statTotal">0</strong></span>
-      <span class="pill" id="statPairedPill">Paired DFF+TXD: <strong id="statPaired">0</strong></span>
-      <span class="pill ok" id="statMaxGrpPill" title="Highest number of peds in any single pedgrp.dat line">Max Peds/Grp: <strong id="statMaxGrp">0</strong></span>
-      <span class="pill ok" id="statClashPill">Clashes: <strong id="statClashes">0</strong></span>
+      <span class="pill" data-tip="Total number of ped rows loaded in the current sheet.">Total Peds: <strong id="statTotal">0</strong></span>
+      <span class="pill" id="statPairedPill" data-tip="Number of peds with a complete .dff and .txd file pair ready for 3D preview & export.">Paired DFF+TXD: <strong id="statPaired">0</strong></span>
+      <span class="pill ok" id="statMaxGrpPill" data-tip="Peak number of peds in a single pedgrp.dat group line. Default GTA SA limit is 23 peds per group (use fastman92 Limit Adjuster if > 23).">Max Peds/Grp: <strong id="statMaxGrp">0</strong></span>
+      <span class="pill ok" id="statClashPill" data-tip="Number of rows with ID collisions, duplicate Model/TXD names, or names overriding vanilla GTA SA peds.">Clashes: <strong id="statClashes">0</strong></span>
     </div>
   </div>
 
@@ -1002,24 +1025,24 @@
     <table class="sheet" id="pedTable">
       <thead>
         <tr>
-          <th class="cell-chk sticky-col-0"><input type="checkbox" id="chkSelectAll" title="Select all visible rows" /></th>
-          <th class="sticky-col-1" style="width: 72px;">ID</th>
-          <th class="sticky-col-2" style="min-width: 195px;">ModelName (DFF) & Actions</th>
-          <th style="min-width: 115px;">TxdName</th>
-          <th style="min-width: 115px;">Pedtype</th>
-          <th style="min-width: 155px;">Stat / Behavior</th>
-          <th style="min-width: 120px;">AnimGroup</th>
-          <th style="min-width: 195px;">Cars Mask</th>
-          <th style="width: 85px;">Flags</th>
-          <th style="min-width: 95px;">AnimFile</th>
-          <th style="min-width: 115px;">Radio 1</th>
-          <th style="min-width: 115px;">Radio 2</th>
-          <th style="min-width: 125px;">Audio Type</th>
-          <th style="min-width: 185px;">Voice 1</th>
-          <th style="min-width: 185px;">Voice 2</th>
-          <th style="min-width: 215px;">Ped Group (pedgrp.dat)</th>
-          <th style="min-width: 105px;">Files</th>
-          <th style="min-width: 95px;">Source</th>
+          <th class="cell-chk sticky-col-0"><input type="checkbox" id="chkSelectAll" data-tip="Select / deselect all visible ped rows (supports Shift+Click for range selection)." /></th>
+          <th class="sticky-col-1" style="width: 72px;" data-tip="Unique Model ID in ped.ide. Add-on peds should use IDs 14000+ to avoid overriding vanilla objects/peds.">ID</th>
+          <th class="sticky-col-2" style="min-width: 195px;" data-tip="Model .dff filename (max 24 alphanumeric/_/- chars). Click 👁️ for 3D preview and ✕ to delete & shift up.">ModelName (DFF) & Actions</th>
+          <th style="min-width: 115px;" data-tip="Texture dictionary .txd name paired with this model (max 24 chars).">TxdName</th>
+          <th style="min-width: 115px;" data-tip="Base AI behavior category & police/gang relationships (CIVMALE, CIVFEMALE, GANG1-10, COP, CRIMINAL, PROSTITUTE, etc.).">Pedtype</th>
+          <th style="min-width: 155px;" data-tip="Personality profile, fear/combat reaction style, and ped stats (pedstats.dat) in-game.">Stat / Behavior</th>
+          <th style="min-width: 120px;" data-tip="Base movement animation group (walk, run, idle) loaded from .ifp files.">AnimGroup</th>
+          <th style="min-width: 195px;" data-tip="Hexadecimal bitmask defining allowed vehicle classes and on-foot spawning (1FFF = all vehicles + walking).">Cars Mask</th>
+          <th style="width: 85px;" data-tip="Drug buyer flag in ped.ide (0 = does not buy drugs, 1 = buys drugs from street dealers).">Flags</th>
+          <th style="width: 95px;" data-tip="Additional animation archive (.ifp) loaded specifically for this ped (typically 'man' or 'null').">AnimFile</th>
+          <th style="min-width: 115px;" data-tip="Primary favorite radio station played when this ped drives a vehicle.">Radio 1</th>
+          <th style="min-width: 115px;" data-tip="Secondary fallback radio station when this ped drives a vehicle.">Radio 2</th>
+          <th style="min-width: 125px;" data-tip="Primary voice bank category (PED_TYPE_GEN general civilians, PED_TYPE_GANG gangs, PED_TYPE_EMG police/medics).">Audio Type</th>
+          <th style="min-width: 185px;" data-tip="Primary dialogue voice bank used when interacting with this ped in-game.">Voice 1</th>
+          <th style="min-width: 185px;" data-tip="Secondary dialogue voice bank (for gang/police variety, or matched with Voice 1 for regular civilians).">Voice 2</th>
+          <th style="min-width: 215px;" data-tip="Population zones/groups where this ped spawns naturally across city streets (LS, SF, LV) in pedgrp.dat.">Ped Group (pedgrp.dat)</th>
+          <th style="min-width: 105px;" data-tip="Availability status of physical .dff (3D mesh) and .txd (textures) files for this ped row.">Files</th>
+          <th style="min-width: 95px;" data-tip="Source directory or file from which this ped entry was originally imported.">Source</th>
         </tr>
       </thead>
       <tbody id="pedTbody"></tbody>
@@ -1294,16 +1317,20 @@
   <!-- FLOATING WINDOW: 3D PED VIEWER -->
   <div class="modal-backdrop" id="modalViewer">
     <div class="viewer-window" id="viewerWindow">
-      <div class="modal-header">
+      <div class="modal-header" style="flex-wrap: wrap;">
         <h3>
           <span>🧍 3D Ped Preview:</span>
           <span id="viewerTitle" style="color: #93c5fd; font-family: var(--font-mono);">—</span>
         </h3>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <button id="btnViewerRotate" class="icon-btn" title="Rotate model orientation 90° (if lying flat/sideways)">🔄 Rotate 90°</button>
-          <button id="btnViewerWire" class="icon-btn" title="Toggle Wireframe">Wireframe</button>
-          <button id="btnViewerReset" class="icon-btn" title="Reset Camera Position">Reset Cam</button>
-          <button id="btnCloseViewer" class="btn-close-x" title="Close Viewer & Free GPU Memory (Esc)">✕</button>
+        <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+          <button id="btnViewerRotX" class="icon-btn" data-tip="Rotate model +90° around the X axis (for Z-up / lying meshes).">Rot X 90°</button>
+          <button id="btnViewerRotY" class="icon-btn" data-tip="Rotate model +90° around the Y axis (front/side facing).">Rot Y 90°</button>
+          <button id="btnViewerRotZ" class="icon-btn" data-tip="Rotate model +90° around the Z axis.">Rot Z 90°</button>
+          <button id="btnViewerResetRot" class="icon-btn" data-tip="Reset model rotation orientation to its initial pose.">Reset Rot</button>
+          <button id="btnViewerWire" class="icon-btn" data-tip="Toggle triangle polygon wireframe overlay.">Wireframe</button>
+          <button id="btnViewerDayNight" class="icon-btn active" data-tip="Toggle GTA SA Day Prelight and Night Prelight lighting simulation.">Day Light</button>
+          <button id="btnViewerReset" class="icon-btn" data-tip="Reset 3D camera orbit, pan, and zoom position.">Reset Cam</button>
+          <button id="btnCloseViewer" class="btn-close-x" data-tip="Close the 3D Viewer window and release GPU memory (Esc).">✕</button>
         </div>
       </div>
       <div class="viewer-canvas-host" id="viewerCanvasHost">
@@ -1326,12 +1353,15 @@
     <div class="multi-grp-popover-head">
       <span id="pedGroupPopoverTitle">Select Ped Groups</span>
       <div style="display:flex; gap:4px;">
-        <button type="button" id="btnPopoverClearGroups" class="icon-btn del">None</button>
-        <button type="button" id="btnPopoverClose" class="icon-btn">Done</button>
+        <button type="button" id="btnPopoverClearGroups" class="icon-btn del" data-tip="Clear all spawn groups for this ped (NONE).">None</button>
+        <button type="button" id="btnPopoverClose" class="icon-btn" data-tip="Close ped group selector.">Done</button>
       </div>
     </div>
     <div class="multi-grp-popover-list" id="pedGroupPopoverList"></div>
   </div>
+
+  <!-- GLOBAL SMART HOVER TOOLTIP -->
+  <div id="smartTooltip"></div>
 
   <div class="toast-container" id="toastContainer"></div>
 
@@ -1912,7 +1942,7 @@
         pedtype: 'CIVMALE',
         stat: 'STAT_STREET_GUY',
         animGroup: 'man',
-        carsMask: '120C',
+        carsMask: '100F',
         flags: '0',
         animFile: 'man',
         radio1: '1',
@@ -1954,10 +1984,27 @@
         this.activeViewer = null;
         this.vanillaPedGrpText = '';
         this.randomBlacklist = {
-          pedtype: new Set(),
-          stat: new Set(),
+          pedtype: new Set([
+            'COP', 'MEDIC', 'FIREMAN',
+            'GANG1', 'GANG2', 'GANG3', 'GANG4', 'GANG5',
+            'GANG6', 'GANG7', 'GANG8', 'GANG9', 'GANG10',
+            'SPECIAL',
+            'MISSION1', 'MISSION2', 'MISSION3', 'MISSION4',
+            'MISSION5', 'MISSION6', 'MISSION7', 'MISSION8'
+          ]),
+          stat: new Set([
+            'STAT_COP', 'STAT_MEDIC', 'STAT_FIREMAN',
+            'STAT_GANG1', 'STAT_GANG2', 'STAT_GANG3', 'STAT_GANG4', 'STAT_GANG5',
+            'STAT_GANG6', 'STAT_GANG7', 'STAT_GANG8', 'STAT_GANG9', 'STAT_GANG10',
+            'STAT_STD_MISSION'
+          ]),
           animGroup: new Set(),
-          carsMask: new Set(['0FFF', '000F', '0100', '0800', '0020', '0040', '0600', '0000']),
+          carsMask: new Set([
+            // Non-walking / disabled
+            '0FFF', '000F', '0100', '0800', '0020', '0040', '0600', '0000',
+            // Mengandung perahu (bit 0x0200 & 0x0400)
+            '1FFF', '1600', '1200', '1400', '120C', '1412', '170F'
+          ]),
           flags: new Set(),
           animFile: new Set(),
           radio: new Set(),
@@ -2059,6 +2106,59 @@
         this.invalidateFilters();
         this.invalidateClashes();
         return true;
+      }
+
+      deleteSelectedShiftUp() {
+        if (this.selectedCount === 0) return 0;
+
+        let firstDeletedIdx = -1;
+        let baseStartId = null;
+        for (let i = 0; i < this.rows.length; i++) {
+          if (this.rows[i].selected) {
+            firstDeletedIdx = i;
+            baseStartId = this.rows[i].id;
+            break;
+          }
+        }
+        if (firstDeletedIdx === -1) return 0;
+
+        let deletedCount = 0;
+        const keptRows = [];
+        for (let i = 0; i < this.rows.length; i++) {
+          const r = this.rows[i];
+          if (r.selected) {
+            deletedCount++;
+          } else {
+            keptRows.push(r);
+          }
+        }
+
+        this.rows = keptRows;
+        this.rowByUid.clear();
+        this.indexByUid.clear();
+        let paired = 0;
+
+        for (let i = 0; i < this.rows.length; i++) {
+          const row = this.rows[i];
+          if (this.editorMode === 'addon' && i >= firstDeletedIdx) {
+            const prevIdStr = String(row.id);
+            const newId = baseStartId + (i - firstDeletedIdx);
+            row.id = newId;
+            if (row.modelName === prevIdStr) row.modelName = String(newId);
+            if (row.txdName === prevIdStr) row.txdName = String(newId);
+            rebuildRowSearchIndex(row);
+          }
+          this.rowByUid.set(row.uid, row);
+          this.indexByUid.set(row.uid, i);
+          if (row.dffHandle && row.txdHandle) paired++;
+        }
+
+        this.selectedCount = 0;
+        this.pairedCount = paired;
+        this.lastCheckedIndex = null;
+        this.invalidateFilters();
+        this.invalidateClashes();
+        return deletedCount;
       }
 
       updateField(uid, field, value) {
@@ -2766,7 +2866,7 @@
           needsFix = true;
         }
         const txdLow = r.txdName.toLowerCase();
-        // Di mode Vanilla, banyak ped sah memakai txdName yang sama (sharing TXD), jadi hanya cek kosong
+        // In Vanilla mode, multiple peds legitimately share the same txdName, so only check for empty values
         if (!txdLow || (!isVanilla && usedTxdNames.has(txdLow))) {
           r.txdName = !usedTxdNames.has(r.modelName.toLowerCase()) ? r.modelName : String(r.id);
           needsFix = true;
@@ -2866,7 +2966,7 @@
       stat: createSelectTemplateCache(PED_STATS, false),
       animGroup: createSelectTemplateCache(ANIM_GROUPS, false),
       carsMask: createSelectTemplateCache(CAR_MASK_PRESETS, true),
-      flags: createSelectTemplateCache([{ v: '0', label: '0' }, { v: '1', label: '1 (Drugs)' }], true),
+      flags: createSelectTemplateCache([{ v: '0', label: '0 (No Drugs)' }, { v: '1', label: '1 (Buys Drugs)' }], true),
       animFile: createSelectTemplateCache(ANIM_FILES, false),
       radio: createSelectTemplateCache(RADIO_STATIONS, true),
       audioType: createSelectTemplateCache(AUDIO_TYPES, false),
@@ -2885,7 +2985,7 @@
     // Lightweight resting cell (0 <option> nodes in DOM — R02)
     function buildLazySelectCellHtml(cacheKey, currentVal, field, extraClass = '') {
       const displayLabel = getSelectDisplayLabel(cacheKey, currentVal);
-      return `<div class="cell-lazy-select ${extraClass}" tabindex="0" role="combobox" aria-expanded="false" data-field="${field}" data-cache="${cacheKey}" title="${escapeHtml(displayLabel)}"><span class="lazy-sel-text">${escapeHtml(displayLabel)}</span><span class="lazy-sel-arrow">▾</span></div>`;
+      return `<div class="cell-lazy-select ${extraClass}" tabindex="0" role="combobox" aria-expanded="false" data-field="${field}" data-cache="${cacheKey}" data-tip="${escapeHtml(displayLabel)}"><span class="lazy-sel-text">${escapeHtml(displayLabel)}</span><span class="lazy-sel-arrow">▾</span></div>`;
     }
 
     // Hydrated native <select> instantiated on demand only for the single active cell (R02)
@@ -2979,8 +3079,12 @@
       const selectedCount = store.selectedCount;
       document.getElementById('selCountLabel').textContent = selectedCount;
       document.getElementById('randCountLabel').textContent = selectedCount;
+      const delLbl = document.getElementById('delCountLabel');
+      if (delLbl) delLbl.textContent = selectedCount;
       document.getElementById('btnCopyFromPed').disabled = selectedCount === 0;
       document.getElementById('btnRandomizeSelected').disabled = selectedCount === 0;
+      const btnDelSel = document.getElementById('btnDeleteSelected');
+      if (btnDelSel) btnDelSel.disabled = selectedCount === 0;
       syncSelectAllCheckboxState();
     }
 
@@ -3043,8 +3147,11 @@
       const grps = row.pedGroups || [];
       const label = formatPedGroupsSummary(grps);
       const badge = grps.length > 0 ? `<span class="multi-grp-count">${grps.length}</span>` : '';
+      const tipText = grps.length > 0
+        ? `Click to manage pedgrp.dat spawn groups (${grps.length} active): ${grps.join(', ')}`
+        : 'Click to assign this ped to pedgrp.dat spawn groups (Currently: NONE)';
       return `
-        <button type="button" class="multi-grp-trigger" title="${escapeHtml(grps.join(', ') || 'NONE')}">
+        <button type="button" class="multi-grp-trigger" data-tip="${escapeHtml(tipText)}">
           <span class="multi-grp-label" style="${grps.length === 0 ? 'color:var(--text-muted);' : ''}">${escapeHtml(label)}</span>
           ${badge}
           <span style="font-size:9px; color:var(--text-muted);">▼</span>
@@ -3059,31 +3166,35 @@
       const txdWarn = r.txdName.length > 20;
       const isVanillaMode = store.editorMode === 'vanilla';
       const fileStatus = isVanillaMode
-        ? `<span class="file-badge none">IDE+DAT Only</span>`
+        ? `<span class="file-badge none" data-tip="Vanilla Mode: Editing ped.ide & pedgrp.dat data only">IDE+DAT Only</span>`
         : (r.dffHandle && r.txdHandle)
-          ? `<span class="file-badge both">DFF+TXD</span>`
+          ? `<span class="file-badge both" data-tip="Complete: Both .dff and .txd files found & ready for 3D preview">DFF+TXD</span>`
           : (r.dffHandle || r.txdHandle)
-            ? `<span class="file-badge partial">${r.dffHandle ? 'DFF Only' : 'TXD Only'}</span>`
-            : `<span class="file-badge none">No Mesh</span>`;
+            ? `<span class="file-badge partial" data-tip="${r.dffHandle ? 'Only .dff mesh file found (missing .txd textures)' : 'Only .txd texture file found (missing .dff mesh)'}">${r.dffHandle ? 'DFF Only' : 'TXD Only'}</span>`
+            : `<span class="file-badge none" data-tip="No 3D files (.dff/.txd) attached to this row">No Mesh</span>`;
+
+      const viewTip = isVanillaMode
+        ? '3D Preview is disabled in Vanilla Mode (no DFF/TXD loaded)'
+        : (!r.dffHandle ? 'No .dff file available for this ped' : `Open 3D Preview (${escapeHtml(r.modelName)})`);
 
       return `
         <tr data-uid="${r.uid}" data-vis-idx="${visIdx}" class="${parityClass} ${r.selected ? 'selected' : ''} ${isClash ? 'row-clash' : ''}">
           <td class="cell-chk sticky-col-0">
-            <input type="checkbox" class="row-chk" ${r.selected ? 'checked' : ''} />
+            <input type="checkbox" class="row-chk" ${r.selected ? 'checked' : ''} data-tip="Check to select [${r.id}] ${escapeHtml(r.modelName)} (Shift+Click for range selection)" />
           </td>
           <td class="sticky-col-1 id-cell">
-            <input type="number" class="cell-input mono" data-field="id" value="${r.id}" />
+            <input type="number" class="cell-input mono" data-field="id" value="${r.id}" data-tip="Ped Model ID in ped.ide${isClash ? ' — WARNING: ID or name collision!' : ''}" />
           </td>
-          <td class="sticky-col-2 name-cell ${modelWarn ? 'name-len-warn' : ''}" title="${modelWarn ? 'Warning: >20 chars (GTA SA max 24 chars)' : ''}">
+          <td class="sticky-col-2 name-cell ${modelWarn ? 'name-len-warn' : ''}" data-tip="${modelWarn ? 'Warning: Name length >20 chars (GTA SA max limit is 24 chars)' : `Model .dff filename (${r.modelName.length}/24 chars)`}">
             <div class="ped-name-wrap">
               <input type="text" class="cell-input mono" data-field="modelName" maxlength="24" value="${escapeHtml(r.modelName)}" />
               <div class="row-actions-inline">
-                <button type="button" class="icon-btn btn-view-ped" title="${isVanillaMode ? '3D Preview disabled in Vanilla Mode (no DFF/TXD)' : `View 3D Model (${escapeHtml(r.modelName)})`}" ${(isVanillaMode || !r.dffHandle) ? 'disabled' : ''}>👁️</button>
-                <button type="button" class="icon-btn del btn-del-ped" title="Clear This Row & Shift Up">✕</button>
+                <button type="button" class="icon-btn btn-view-ped" data-tip="${viewTip}" ${(isVanillaMode || !r.dffHandle) ? 'disabled' : ''}>👁️</button>
+                <button type="button" class="icon-btn del btn-del-ped" data-tip="Delete this row & shift subsequent row IDs up">✕</button>
               </div>
             </div>
           </td>
-          <td class="txd-cell ${txdWarn ? 'name-len-warn' : ''}" title="${txdWarn ? 'Warning: >20 chars (GTA SA max 24 chars)' : ''}">
+          <td class="txd-cell ${txdWarn ? 'name-len-warn' : ''}" data-tip="${txdWarn ? 'Warning: TXD name length >20 chars (GTA SA max limit is 24 chars)' : `Texture dictionary .txd name (${r.txdName.length}/24 chars)`}">
             <input type="text" class="cell-input mono" data-field="txdName" maxlength="24" value="${escapeHtml(r.txdName)}" />
           </td>
           <td>${buildLazySelectCellHtml('pedtype', r.pedtype, 'pedtype')}</td>
@@ -3099,7 +3210,7 @@
           <td>${buildLazySelectCellHtml('voice', r.voice2, 'voice2', 'mono')}</td>
           <td>${buildMultiGroupCellHtml(r)}</td>
           <td>${fileStatus}</td>
-          <td><span class="source-tag">${escapeHtml(r.sourceTag)}</span></td>
+          <td><span class="source-tag" data-tip="Row import source: ${escapeHtml(r.sourceTag)}">${escapeHtml(r.sourceTag)}</span></td>
         </tr>
       `;
     }
@@ -3279,7 +3390,7 @@
     pedTbody.addEventListener('mousedown', (e) => {
       const lazyEl = e.target.closest('.cell-lazy-select');
       if (lazyEl) {
-        e.preventDefault(); // Mencegah focus steal/cancel saat DOM diganti dari div ke select
+        e.preventDefault(); // Prevent focus steal/cancel when swapping DOM from div to select
         hydrateLazySelectCell(lazyEl, true);
       }
     });
@@ -3293,7 +3404,7 @@
 
     pedTbody.addEventListener('focusout', (e) => {
       if (e.target.classList && e.target.classList.contains('cell-select')) {
-        // Defer dehydration agar popup <select> native tidak tertutup sebelum pilihan diklik
+        // Defer dehydration so the native <select> popup does not close before an option is clicked
         const sel = e.target;
         setTimeout(() => {
           if (document.activeElement !== sel && sel.isConnected) {
@@ -3414,7 +3525,7 @@
         case 'stat': return PED_STATS.map(v => ({ v, label: v }));
         case 'animGroup': return ANIM_GROUPS.map(v => ({ v, label: v }));
         case 'carsMask': return CAR_MASK_PRESETS;
-        case 'flags': return [{ v: '0', label: '0' }, { v: '1', label: '1 (Drugs)' }];
+        case 'flags': return [{ v: '0', label: '0 (No Drugs)' }, { v: '1', label: '1 (Buys Drugs)' }];
         case 'animFile': return ANIM_FILES.map(v => ({ v, label: v }));
         case 'radio': return RADIO_STATIONS;
         case 'audioType': return AUDIO_TYPES.map(v => ({ v, label: v }));
@@ -3528,7 +3639,7 @@
       openModal('modalRandomizePed');
     });
 
-    // Smart Context Sync Classifiers & 3-Step Pool Resolver
+    // Smart Context Sync Classifiers & 3-Step Weighted Pool Resolver
     const FEMALE_ANIM_GROUPS = new Set(['woman', 'sexywoman', 'busywoman', 'oldwoman', 'oldfatwoman', 'fatwoman', 'pro', 'jogwoman']);
     const OLD_ANIM_GROUPS = new Set(['oldman', 'oldwoman', 'oldfatwoman']);
     const RICH_ANIM_GROUPS = new Set(['sexywoman', 'busywoman']);
@@ -3537,16 +3648,19 @@
       const active = ACTIVE_SPC_GA_VOICES.map(x => x.v).filter(v => v !== 'VOICE_GEN_NOVOICE');
       const femaleAll = active.filter(isFemaleVoice);
       const maleAll = active.filter(v => !isFemaleVoice(v));
+      const maleCivil = maleAll.filter(v => !/(POL\d|ELV)$/.test(v));
 
       return {
         femaleAll,
         maleAll,
+        maleCivil,
         femalePro: femaleAll.filter(v => v.includes('PRO')),
         femaleOld: femaleAll.filter(v => /^VOICE_GEN_[A-Z]{1,3}FO/.test(v)),
         femaleRich: femaleAll.filter(v => /(RI|BU|CRP|STEW)$/.test(v)),
-        maleOld: maleAll.filter(v => /^VOICE_GEN_[A-Z]{1,3}MO/.test(v)),
-        maleRich: maleAll.filter(v => /(RI|BU|CON|MIB|PLT|GOL)/.test(v)),
-        maleToughCrim: maleAll.filter(v => /(CR|DRUG|BIK|MAFF|BOUN|BOX|MOTR|TR\d|CH|BDYG)/.test(v)),
+        maleOld: maleCivil.filter(v => /^VOICE_GEN_[A-Z]{1,3}MO/.test(v) && !/MOTR\d*$/.test(v)),
+        maleTramp: maleCivil.filter(v => /MOTR\d*$/.test(v)),
+        maleRich: maleCivil.filter(v => /(RI|BU|MIB|PLT|GOL\d?)$/.test(v) && !/^VOICE_GEN_[A-Z]{1,3}MO/.test(v)),
+        maleToughCrim: maleCivil.filter(v => /(CR|DRUG|BIK|MAFF|BOUN|BOX|BDYG)/.test(v)),
         gang: GANG_VOICE_GROUPS,
         emgCop: EMG_COP_VOICES,
         emgMedic: EMG_MEDIC_VOICES
@@ -3560,65 +3674,220 @@
       return base;
     }
 
+    function weightedPickFromItems(weightedItems) {
+      if (!weightedItems || weightedItems.length === 0) return null;
+      let totalWeight = 0;
+      for (let i = 0; i < weightedItems.length; i++) {
+        totalWeight += Math.max(0, weightedItems[i].w);
+      }
+      if (totalWeight <= 0) return randomPick(weightedItems).v;
+      let r = Math.random() * totalWeight;
+      for (let i = 0; i < weightedItems.length; i++) {
+        r -= Math.max(0, weightedItems[i].w);
+        if (r <= 0) return weightedItems[i].v;
+      }
+      return weightedItems[weightedItems.length - 1].v;
+    }
+
+    function resolveWeightedContextPool(weightedItems, blSet, fallbackPlainPool = null) {
+      const valid = (weightedItems || []).filter(item => !blSet.has(item.v));
+      if (valid.length > 0) return valid;
+      const fb = (fallbackPlainPool || []).filter(v => !blSet.has(v));
+      if (fb.length > 0) return fb.map(v => ({ v, w: 1 }));
+      return weightedItems;
+    }
+
     function detectPedGender(ped) {
       if (ped.pedtype === 'CIVFEMALE' || ped.pedtype === 'PROSTITUTE') return 'F';
       if (FEMALE_ANIM_GROUPS.has(ped.animGroup)) return 'F';
       if (/_GIRL$|_FEMALE$|STAT_PROSTITUTE/.test(ped.stat)) return 'F';
       if (isFemaleVoice(ped.voice1) || isFemaleVoice(ped.voice2)) return 'F';
       const hint = `${ped.modelName} ${ped.sourceTag}`.toLowerCase();
-      if (/^[a-z]{1,3}f[yo][a-z0-9_]*$/.test(hint.split('/').pop())) return 'F';
-      if (/(female|woman|girl|lady|prostitute|hooker|bitch|chick|nun|nurse|maid)/.test(hint)) return 'F';
+      const baseName = hint.split('/').pop();
+      if (/^(f_|fem_|cew_|wnt_)/.test(baseName)) return 'F';
+      if (/^[a-z]{1,3}f[yo][a-z0-9_]*$/.test(baseName)) return 'F';
+      if (/(female|woman|girl|lady|prostitute|hooker|bitch|chick|nun|nurse|maid|mom|mommy)/.test(hint)) return 'F';
       return 'M';
     }
 
     function getContextPedtypePool(gender) {
-      if (gender === 'F') return ['CIVFEMALE', 'PROSTITUTE'];
+      if (gender === 'F') {
+        return [
+          { v: 'CIVFEMALE', w: 72 },
+          { v: 'CRIMINAL', w: 16 },
+          { v: 'PROSTITUTE', w: 12 }
+        ];
+      }
+      // Expand the share for CRIMINAL & DEALER to ensure it is proportional, independent of the GANG.
       return [
-        'CIVMALE', 'CRIMINAL', 'COP', 'MEDIC', 'FIREMAN',
-        'GANG1', 'GANG2', 'GANG3', 'GANG4', 'GANG5', 'GANG6', 'GANG7', 'GANG8', 'GANG9', 'GANG10'
+        { v: 'CIVMALE', w: 54 },
+        { v: 'CRIMINAL', w: 26 },
+        { v: 'DEALER', w: 20 },
+        { v: 'GANG1', w: 1.5 },
+        { v: 'GANG2', w: 1.5 },
+        { v: 'GANG3', w: 1.5 },
+        { v: 'GANG4', w: 1.5 },
+        { v: 'GANG5', w: 1.5 },
+        { v: 'GANG6', w: 1.5 },
+        { v: 'GANG7', w: 1.5 },
+        { v: 'GANG8', w: 1.5 },
+        { v: 'COP', w: 1.5 },
+        { v: 'MEDIC', w: 0.5 },
+        { v: 'FIREMAN', w: 0.5 }
       ];
     }
 
     function getContextStatPool(pedtype, gender) {
-      if (pedtype === 'PROSTITUTE') return ['STAT_PROSTITUTE'];
-      if (pedtype === 'COP') return ['STAT_COP'];
-      if (pedtype === 'MEDIC') return ['STAT_MEDIC'];
-      if (pedtype === 'FIREMAN') return ['STAT_FIREMAN'];
-      if (/^GANG(\d+)$/.test(pedtype)) return [`STAT_${pedtype}`];
-      if (pedtype === 'CRIMINAL') return ['STAT_CRIMINAL'];
+      if (pedtype === 'PROSTITUTE') return [{ v: 'STAT_PROSTITUTE', w: 100 }];
+      if (pedtype === 'COP') return [{ v: 'STAT_COP', w: 100 }];
+      if (pedtype === 'MEDIC') return [{ v: 'STAT_MEDIC', w: 100 }];
+      if (pedtype === 'FIREMAN') return [{ v: 'STAT_FIREMAN', w: 100 }];
+      if (/^GANG(\d+)$/.test(pedtype)) return [{ v: `STAT_${pedtype}`, w: 100 }];
 
-      const neutral = ['STAT_COWARD', 'STAT_TOURIST', 'STAT_SHOPPER', 'STAT_SKATER'];
+      if (pedtype === 'CRIMINAL') {
+        return gender === 'F'
+          ? [
+              { v: 'STAT_CRIMINAL', w: 55 },
+              { v: 'STAT_TOUGH_GIRL', w: 20 },
+              { v: 'STAT_STREET_GIRL', w: 15 },
+              { v: 'STAT_SUIT_GIRL', w: 10 }
+            ]
+          : [
+              { v: 'STAT_CRIMINAL', w: 55 },
+              { v: 'STAT_TOUGH_GUY', w: 20 },
+              { v: 'STAT_STREET_GUY', w: 15 },
+              { v: 'STAT_SUIT_GUY', w: 10 }
+            ];
+      }
+
+      if (pedtype === 'DEALER') {
+        return gender === 'F'
+          ? [
+              { v: 'STAT_CRIMINAL', w: 60 },
+              { v: 'STAT_STREET_GIRL', w: 25 },
+              { v: 'STAT_TOUGH_GIRL', w: 15 }
+            ]
+          : [
+              { v: 'STAT_CRIMINAL', w: 60 },
+              { v: 'STAT_STREET_GUY', w: 25 },
+              { v: 'STAT_TOUGH_GUY', w: 15 }
+            ];
+      }
+
       if (gender === 'F') {
         return [
-          'STAT_STREET_GIRL', 'STAT_SUIT_GIRL', 'STAT_OLD_GIRL',
-          'STAT_BEACH_GIRL', 'STAT_TOUGH_GIRL', 'STAT_GEEK_GIRL',
-          ...neutral
+          { v: 'STAT_STREET_GIRL', w: 26 },
+          { v: 'STAT_SUIT_GIRL', w: 15 },
+          { v: 'STAT_SHOPPER', w: 13 },
+          { v: 'STAT_TOURIST', w: 10 },
+          { v: 'STAT_CRIMINAL', w: 8 },
+          { v: 'STAT_BEACH_GIRL', w: 8 },
+          { v: 'STAT_OLD_GIRL', w: 7 },
+          { v: 'STAT_TOUGH_GIRL', w: 5 },
+          { v: 'STAT_GEEK_GIRL', w: 3 },
+          { v: 'STAT_COWARD', w: 3 },
+          { v: 'STAT_SKATER', w: 2 }
         ];
       }
       return [
-        'STAT_STREET_GUY', 'STAT_SUIT_GUY', 'STAT_OLD_GUY', 'STAT_TOUGH_GUY',
-        'STAT_SENSIBLE_GUY', 'STAT_BEACH_GUY', 'STAT_GEEK_GUY',
-        'STAT_TRAMP_MALE', 'STAT_TAXIDRIVER',
-        ...neutral
+        { v: 'STAT_STREET_GUY', w: 24 },
+        { v: 'STAT_SENSIBLE_GUY', w: 18 },
+        { v: 'STAT_SUIT_GUY', w: 14 },
+        { v: 'STAT_CRIMINAL', w: 12 },
+        { v: 'STAT_TOUGH_GUY', w: 8 },
+        { v: 'STAT_OLD_GUY', w: 6 },
+        { v: 'STAT_BEACH_GUY', w: 5 },
+        { v: 'STAT_SHOPPER', w: 4 },
+        { v: 'STAT_TOURIST', w: 3 },
+        { v: 'STAT_GEEK_GUY', w: 2 },
+        { v: 'STAT_TRAMP_MALE', w: 2 },
+        { v: 'STAT_TAXIDRIVER', w: 1 },
+        { v: 'STAT_COWARD', w: 0.5 },
+        { v: 'STAT_SKATER', w: 0.5 }
       ];
     }
 
     function getContextAnimGroupPool(pedtype, stat, gender) {
-      if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE') return ['pro'];
-      if (pedtype === 'COP' || pedtype === 'MEDIC' || pedtype === 'FIREMAN') return ['swat', 'cop', 'medic'];
-      if (/^GANG\d+$/.test(pedtype)) return ['gang1', 'gang2', 'man'];
-      if (stat === 'STAT_SKATER') return ['skate'];
+      if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE') return [{ v: 'pro', w: 100 }];
+      if (pedtype === 'COP') return [{ v: 'cop', w: 85 }, { v: 'swat', w: 15 }];
+      if (pedtype === 'MEDIC') return [{ v: 'medic', w: 85 }, { v: 'man', w: 15 }];
+      if (pedtype === 'FIREMAN') return [{ v: 'man', w: 100 }];
+      if (/^GANG\d+$/.test(pedtype)) return [{ v: 'gang1', w: 45 }, { v: 'gang2', w: 45 }, { v: 'man', w: 10 }];
+      if (stat === 'STAT_SKATER') return [{ v: 'skate', w: 100 }];
 
       if (gender === 'F') {
-        if (stat === 'STAT_OLD_GIRL') return ['oldwoman', 'oldfatwoman'];
-        if (stat === 'STAT_SUIT_GIRL') return ['busywoman', 'sexywoman', 'woman'];
-        if (stat === 'STAT_BEACH_GIRL') return ['woman', 'jogwoman'];
-        return ['woman', 'sexywoman', 'busywoman', 'jogwoman'];
+        if (stat === 'STAT_OLD_GIRL') return [{ v: 'oldwoman', w: 75 }, { v: 'oldfatwoman', w: 25 }];
+        if (stat === 'STAT_SUIT_GIRL') return [{ v: 'busywoman', w: 45 }, { v: 'sexywoman', w: 35 }, { v: 'woman', w: 20 }];
+        if (stat === 'STAT_BEACH_GIRL') return [{ v: 'woman', w: 65 }, { v: 'jogwoman', w: 35 }];
+        return [
+          { v: 'woman', w: 55 },
+          { v: 'busywoman', w: 20 },
+          { v: 'sexywoman', w: 15 },
+          { v: 'jogwoman', w: 7 },
+          { v: 'fatwoman', w: 3 }
+        ];
       }
-      if (stat === 'STAT_OLD_GUY') return ['oldman', 'man'];
-      if (stat === 'STAT_TRAMP_MALE') return ['oldman', 'man', 'shuffle'];
-      if (pedtype === 'CRIMINAL' || stat === 'STAT_CRIMINAL') return ['man', 'gang1', 'gang2'];
-      return ['man', 'jogger', 'fatman'];
+      if (stat === 'STAT_OLD_GUY') return [{ v: 'oldman', w: 70 }, { v: 'man', w: 20 }, { v: 'shuffle', w: 10 }];
+      if (stat === 'STAT_TRAMP_MALE') return [{ v: 'shuffle', w: 45 }, { v: 'oldman', w: 35 }, { v: 'man', w: 20 }];
+      if (pedtype === 'CRIMINAL' || pedtype === 'DEALER' || stat === 'STAT_CRIMINAL') {
+        return [
+          { v: 'man', w: 65 },
+          { v: 'jogger', w: 15 },
+          { v: 'shuffle', w: 10 },
+          { v: 'fatman', w: 5 },
+          { v: 'gang1', w: 3 },
+          { v: 'gang2', w: 2 }
+        ];
+      }
+      if (stat === 'STAT_SUIT_GUY' || stat === 'STAT_TAXIDRIVER') {
+        return [{ v: 'man', w: 92 }, { v: 'jogger', w: 5 }, { v: 'fatman', w: 3 }];
+      }
+      return [
+        { v: 'man', w: 78 },
+        { v: 'jogger', w: 12 },
+        { v: 'shuffle', w: 6 },
+        { v: 'fatman', w: 4 }
+      ];
+    }
+
+    function getContextCarsMaskPool(pedtype, stat, animGroup) {
+      if (pedtype === 'COP' || pedtype === 'MEDIC' || pedtype === 'FIREMAN') {
+        return [{ v: '1000', w: 100 }];
+      }
+      if (pedtype === 'PROSTITUTE' || stat === 'STAT_PROSTITUTE' || animGroup === 'pro') {
+        return [{ v: '1000', w: 75 }, { v: '1002', w: 15 }, { v: '1003', w: 10 }];
+      }
+      if (stat === 'STAT_TAXIDRIVER') {
+        return [{ v: '1040', w: 80 }, { v: '1070', w: 20 }];
+      }
+      if (stat === 'STAT_SKATER' || animGroup === 'skate') {
+        return [{ v: '1800', w: 55 }, { v: '1980', w: 25 }, { v: '1000', w: 20 }];
+      }
+      if (stat === 'STAT_TRAMP_MALE') {
+        return [{ v: '1000', w: 75 }, { v: '1002', w: 15 }, { v: '1013', w: 10 }];
+      }
+      if (OLD_ANIM_GROUPS.has(animGroup) || stat === 'STAT_OLD_GUY' || stat === 'STAT_OLD_GIRL') {
+        return [{ v: '1001', w: 35 }, { v: '1004', w: 25 }, { v: '1007', w: 25 }, { v: '1000', w: 15 }];
+      }
+      if (stat === 'STAT_SUIT_GUY' || stat === 'STAT_SUIT_GIRL' || RICH_ANIM_GROUPS.has(animGroup)) {
+        return [{ v: '1004', w: 35 }, { v: '100C', w: 35 }, { v: '1008', w: 20 }, { v: '100F', w: 10 }];
+      }
+      if (/^GANG\d+$/.test(pedtype) || pedtype === 'CRIMINAL' || pedtype === 'DEALER' || stat === 'STAT_CRIMINAL') {
+        return [{ v: '1003', w: 30 }, { v: '1008', w: 25 }, { v: '100F', w: 20 }, { v: '1100', w: 15 }, { v: '198F', w: 10 }];
+      }
+      if (stat === 'STAT_BEACH_GUY' || stat === 'STAT_BEACH_GIRL') {
+        return [{ v: '1000', w: 45 }, { v: '1800', w: 30 }, { v: '1980', w: 25 }];
+      }
+      return [
+        { v: '198F', w: 25 },
+        { v: '100F', w: 20 },
+        { v: '1001', w: 15 },
+        { v: '1003', w: 12 },
+        { v: '1007', w: 10 },
+        { v: '1983', w: 8 },
+        { v: '1070', w: 5 },
+        { v: '1013', w: 5 }
+      ];
     }
 
     function getContextAnimFilePool(pedtype, stat, animGroup) {
@@ -3629,19 +3898,18 @@
     }
 
     function getContextFlagsPool(pedtype, stat, animGroup) {
-      if (pedtype === 'COP' || pedtype === 'MEDIC' || pedtype === 'FIREMAN') return ['0'];
+      if (pedtype === 'COP' || pedtype === 'MEDIC' || pedtype === 'FIREMAN') return [{ v: '0', w: 100 }];
       if (OLD_ANIM_GROUPS.has(animGroup) || stat === 'STAT_OLD_GUY' || stat === 'STAT_OLD_GIRL' || stat === 'STAT_TRAMP_MALE') {
-        return ['0'];
+        return [{ v: '0', w: 100 }];
       }
-      if (/^GANG\d+$/.test(pedtype) || pedtype === 'CRIMINAL' || pedtype === 'PROSTITUTE' || stat === 'STAT_CRIMINAL' || stat === 'STAT_PROSTITUTE') {
-        return ['1'];
+      if (/^GANG\d+$/.test(pedtype) || pedtype === 'CRIMINAL' || pedtype === 'DEALER' || pedtype === 'PROSTITUTE' || stat === 'STAT_CRIMINAL' || stat === 'STAT_PROSTITUTE') {
+        return [{ v: '1', w: 85 }, { v: '0', w: 15 }];
       }
-      return ['0', '1'];
+      return [{ v: '0', w: 82 }, { v: '1', w: 18 }];
     }
 
     const EXCLUSIVE_PED_GROUPS = new Set([
-      ...Object.values(GANG_PED_GROUPS_BY_NUM),
-      'Dealers'
+      ...Object.values(GANG_PED_GROUPS_BY_NUM)
     ]);
 
     // Pedtypes that do NOT spawn via pedgrp.dat in GTA SA
@@ -3655,9 +3923,6 @@
       if (gangMatch) {
         const grp = GANG_PED_GROUPS_BY_NUM[Number(gangMatch[1])];
         return { isExclusive: true, groups: grp ? [grp] : [] };
-      }
-      if (pedtype === 'DEALER') {
-        return { isExclusive: true, groups: ['Dealers'] };
       }
       if (NON_PEDGRP_PEDTYPES.has(pedtype)) {
         return { isExclusive: true, groups: [] };
@@ -3697,7 +3962,7 @@
       return picked;
     }
 
-    function getContextPedGroupPool(pedtype, stat, animGroup) {
+    function getContextPedGroupPool(pedtype, stat, animGroup, gender) {
       const excl = getExclusivePedGroupRule(pedtype);
       if (excl.isExclusive) return { pool: excl.groups, min: excl.groups.length, max: excl.groups.length };
 
@@ -3716,18 +3981,41 @@
         };
       }
 
+      if (pedtype === 'DEALER') {
+        return {
+          pool: [
+            'Dealers',
+            'POPCYCLE_GROUP_CRIMINALS (SF)',
+            'POPCYCLE_GROUP_CRIMINALS (VEGAS)',
+            'POPCYCLE_GROUP_CRIMINALS',
+            'POPCYCLE_GROUP_CLUBBERS (SF)',
+            'POPCYCLE_GROUP_CLUBBERS (VEGAS)',
+            'POPCYCLE_GROUP_CLUBBERS',
+            'POPCYCLE_GROUP_CASUAL_POOR (SF)',
+            'POPCYCLE_GROUP_CASUAL_POOR (VEGAS)',
+            'POPCYCLE_GROUP_CASUAL_POOR'
+          ],
+          min: 2,
+          max: 4
+        };
+      }
+
       if (pedtype === 'CRIMINAL' || stat === 'STAT_CRIMINAL') {
         return {
           pool: [
             'POPCYCLE_GROUP_CRIMINALS (SF)',
             'POPCYCLE_GROUP_CRIMINALS (VEGAS)',
             'POPCYCLE_GROUP_CRIMINALS',
+            ...(gender === 'F' ? [] : ['Dealers']),
             'POPCYCLE_GROUP_CASUAL_POOR (SF)',
             'POPCYCLE_GROUP_CASUAL_POOR (VEGAS)',
             'POPCYCLE_GROUP_CASUAL_POOR',
             'POPCYCLE_GROUP_CLUBBERS (SF)',
             'POPCYCLE_GROUP_CLUBBERS (VEGAS)',
-            'POPCYCLE_GROUP_CLUBBERS'
+            'POPCYCLE_GROUP_CLUBBERS',
+            'POPCYCLE_GROUP_BUSINESS (SF)',
+            'POPCYCLE_GROUP_BUSINESS (VEGAS)',
+            'POPCYCLE_GROUP_BUSINESS'
           ],
           min: 2,
           max: 4
@@ -3785,6 +4073,7 @@
         };
       }
 
+      const genderFamilyGroup = gender === 'F' ? 'Wives' : 'Husbands';
       return {
         pool: [
           'POPCYCLE_GROUP_CASUAL_AVERAGE (SF)', 'POPCYCLE_GROUP_CASUAL_AVERAGE (VEGAS)', 'POPCYCLE_GROUP_CASUAL_AVERAGE',
@@ -3793,7 +4082,7 @@
           'POPCYCLE_GROUP_PARKFOLK (SF)', 'POPCYCLE_GROUP_PARKFOLK (VEGAS)', 'POPCYCLE_GROUP_PARKFOLK',
           'POPCYCLE_GROUP_CLUBBERS (SF)', 'POPCYCLE_GROUP_CLUBBERS (VEGAS)', 'POPCYCLE_GROUP_CLUBBERS',
           'POPCYCLE_GROUP_FARMERS', 'POPCYCLE_GROUP_DESERT_FOLK', 'POPCYCLE_GROUP_SERVANTS',
-          'Shopkeepers', 'Office workers', 'Husbands', 'Wives'
+          'Shopkeepers', 'Office workers', genderFamilyGroup
         ],
         min: 2,
         max: 4
@@ -3801,11 +4090,14 @@
     }
 
     function getContextAudioAndVoices(pedtype, stat, animGroup, gender) {
-      if (pedtype === 'COP' || pedtype === 'FIREMAN') {
+      if (pedtype === 'COP') {
         return { audioType: 'PED_TYPE_EMG', pool: VOICE_POOLS_CLASSIFIED.emgCop, pairMode: 'distinct' };
       }
       if (pedtype === 'MEDIC') {
         return { audioType: 'PED_TYPE_EMG', pool: VOICE_POOLS_CLASSIFIED.emgMedic, pairMode: 'distinct' };
+      }
+      if (pedtype === 'FIREMAN') {
+        return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleCivil, pairMode: 'same' };
       }
       if (/^GANG(\d+)$/.test(pedtype)) {
         const gIdx = (parseInt(pedtype.replace('GANG', ''), 10) - 1) % VOICE_POOLS_CLASSIFIED.gang.length;
@@ -3823,16 +4115,19 @@
         }
         return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.femaleAll, pairMode: 'same' };
       }
+      if (stat === 'STAT_TRAMP_MALE') {
+        return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleTramp, pairMode: 'same' };
+      }
       if (OLD_ANIM_GROUPS.has(animGroup) || stat === 'STAT_OLD_GUY') {
         return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleOld, pairMode: 'same' };
       }
-      if (pedtype === 'CRIMINAL' || stat === 'STAT_CRIMINAL' || stat === 'STAT_TOUGH_GUY' || stat === 'STAT_TRAMP_MALE') {
+      if (pedtype === 'CRIMINAL' || pedtype === 'DEALER' || stat === 'STAT_CRIMINAL' || stat === 'STAT_TOUGH_GUY') {
         return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleToughCrim, pairMode: 'same' };
       }
       if (stat === 'STAT_SUIT_GUY') {
         return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleRich, pairMode: 'same' };
       }
-      return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleAll, pairMode: 'same' };
+      return { audioType: 'PED_TYPE_GEN', pool: VOICE_POOLS_CLASSIFIED.maleCivil, pairMode: 'same' };
     }
 
     document.getElementById('btnConfirmRandomizePed').addEventListener('click', async () => {
@@ -3871,8 +4166,13 @@
       }
 
       await runChunkedTask(targets, (target) => {
+        const gender = (forcedGender === 'F' || forcedGender === 'M') ? forcedGender : detectPedGender(target);
+
         if (!smartSync) {
-          if (on.pedtype) target.pedtype = randomPick(resolveContextPool(rawPools.pedtype, bl.pedtype));
+          if (on.pedtype) {
+            const ptPool = gender === 'F' ? rawPools.pedtype.filter(v => v !== 'DEALER') : rawPools.pedtype;
+            target.pedtype = randomPick(resolveContextPool(ptPool, bl.pedtype));
+          }
           if (on.stat) target.stat = randomPick(resolveContextPool(rawPools.stat, bl.stat));
           if (on.animGroup) target.animGroup = randomPick(resolveContextPool(rawPools.animGroup, bl.animGroup));
           if (on.carsMask) target.carsMask = randomPick(resolveContextPool(rawPools.carsMask, bl.carsMask));
@@ -3888,7 +4188,9 @@
             if (excl.isExclusive) {
               target.pedGroups = excl.groups.filter(g => !bl.pedGroup.has(g));
             } else {
-              const generalGroups = rawPools.pedGroup.filter(g => g !== 'NONE' && !EXCLUSIVE_PED_GROUPS.has(g));
+              const generalGroups = rawPools.pedGroup.filter(
+                g => g !== 'NONE' && !EXCLUSIVE_PED_GROUPS.has(g) && !(gender === 'F' && g === 'Dealers')
+              );
               const rawPgPool = resolveContextPool(generalGroups, bl.pedGroup, generalGroups);
               const targetCount = userMinGrp + Math.floor(Math.random() * (userMaxGrp - userMinGrp + 1));
               target.pedGroups = weightedPickUniqueFromPool(rawPgPool, targetCount);
@@ -3898,33 +4200,35 @@
           return;
         }
 
-        const gender = (forcedGender === 'F' || forcedGender === 'M') ? forcedGender : detectPedGender(target);
-
         if (on.pedtype) {
-          const ptPool = resolveContextPool(getContextPedtypePool(gender), bl.pedtype, rawPools.pedtype);
-          target.pedtype = randomPick(ptPool);
+          const fallbackPedtypes = gender === 'F' ? ['CIVFEMALE', 'CRIMINAL', 'PROSTITUTE'] : rawPools.pedtype;
+          const ptWeighted = resolveWeightedContextPool(getContextPedtypePool(gender), bl.pedtype, fallbackPedtypes);
+          target.pedtype = weightedPickFromItems(ptWeighted);
         }
 
-        const activeGender = (target.pedtype === 'CIVFEMALE' || target.pedtype === 'PROSTITUTE') ? 'F' : gender;
+        // Lock activeGender to forcedGender when explicitly forced ('M' or 'F')
+        const activeGender = (forcedGender === 'F' || forcedGender === 'M')
+          ? forcedGender
+          : ((target.pedtype === 'CIVFEMALE' || target.pedtype === 'PROSTITUTE') ? 'F' : gender);
 
         if (on.stat) {
-          const stPool = resolveContextPool(getContextStatPool(target.pedtype, activeGender), bl.stat, rawPools.stat);
-          target.stat = randomPick(stPool);
+          const stWeighted = resolveWeightedContextPool(getContextStatPool(target.pedtype, activeGender), bl.stat, rawPools.stat);
+          target.stat = weightedPickFromItems(stWeighted);
         }
 
         if (on.animGroup) {
-          const agPool = resolveContextPool(getContextAnimGroupPool(target.pedtype, target.stat, activeGender), bl.animGroup, rawPools.animGroup);
-          target.animGroup = randomPick(agPool);
+          const agWeighted = resolveWeightedContextPool(getContextAnimGroupPool(target.pedtype, target.stat, activeGender), bl.animGroup, rawPools.animGroup);
+          target.animGroup = weightedPickFromItems(agWeighted);
         }
 
         if (on.carsMask) {
-          const cmPool = resolveContextPool(rawPools.carsMask, bl.carsMask);
-          target.carsMask = randomPick(cmPool);
+          const cmWeighted = resolveWeightedContextPool(getContextCarsMaskPool(target.pedtype, target.stat, target.animGroup), bl.carsMask, rawPools.carsMask);
+          target.carsMask = weightedPickFromItems(cmWeighted);
         }
 
         if (on.flags) {
-          const flPool = resolveContextPool(getContextFlagsPool(target.pedtype, target.stat, target.animGroup), bl.flags, rawPools.flags);
-          target.flags = randomPick(flPool);
+          const flWeighted = resolveWeightedContextPool(getContextFlagsPool(target.pedtype, target.stat, target.animGroup), bl.flags, rawPools.flags);
+          target.flags = weightedPickFromItems(flWeighted);
         }
 
         if (on.animFile) {
@@ -3959,12 +4263,17 @@
             target.pedGroups = excl.groups.filter(g => !bl.pedGroup.has(g));
           } else {
             const targetCount = userMinGrp + Math.floor(Math.random() * (userMaxGrp - userMinGrp + 1));
-            const generalValidGroups = rawPools.pedGroup.filter(g => g !== 'NONE' && !EXCLUSIVE_PED_GROUPS.has(g));
-            const pgCtx = getContextPedGroupPool(target.pedtype, target.stat, target.animGroup);
+            const oppositeFamilyGroup = activeGender === 'F' ? 'Husbands' : 'Wives';
+            const generalValidGroups = rawPools.pedGroup.filter(
+              g => g !== 'NONE'
+                && !EXCLUSIVE_PED_GROUPS.has(g)
+                && g !== oppositeFamilyGroup
+                && !(activeGender === 'F' && g === 'Dealers')
+            );
+            const pgCtx = getContextPedGroupPool(target.pedtype, target.stat, target.animGroup, activeGender);
             const safePrimaryPool = pgCtx.pool.filter(g => !EXCLUSIVE_PED_GROUPS.has(g) && !bl.pedGroup.has(g));
 
             // 1. Guarantee picking from the ped's primary context pool first (prioritizing (SF) & (VEGAS))
-            //    so setting Min >= 3 never dilutes roles like PROSTITUTE with unrelated groups.
             const primaryPicked = weightedPickUniqueFromPool(safePrimaryPool, targetCount);
 
             // 2. Only if the primary context pool has fewer items than targetCount, fill remaining slots from general groups.
@@ -3994,316 +4303,1288 @@
     });
 
     // =========================================================================
-    // 11. LAZY-LOADED 3D PED VIEWER (STRIPPED & ZERO MEMORY LEAK)
+    // 11. ROBUST RENDERWARE 3.6 DFF/TXD PARSER & 3D PED VIEWER (PORTED FROM PED OPTIMIZER)
     // =========================================================================
-    let cached3DLibs = null;
+    const RW_CHUNK_ID = {
+      STRUCT: 0x0001,
+      STRING: 0x0002,
+      EXTENSION: 0x0003,
+      TEXTURE: 0x0006,
+      MATERIAL: 0x0007,
+      MATLIST: 0x0008,
+      FRAMELIST: 0x000E,
+      GEOMETRY: 0x000F,
+      CLUMP: 0x0010,
+      ATOMIC: 0x0014,
+      TEXNATIVE: 0x0015,
+      TEXDICT: 0x0016,
+      GEOMLIST: 0x001A,
+      SKIN_PLG: 0x0116,
+      BINMESH_PLG: 0x050E,
+      EXTRA_VERT_COL: 0x0253F2F9
+    };
 
-    async function load3DLibraries() {
-      if (cached3DLibs) return cached3DLibs;
-      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-        throw new Error('Device is offline. Connect to the internet briefly to load the 3D Viewer engine from CDN.');
+    class RwBinReader {
+      constructor(buffer) {
+        this.u8 = new Uint8Array(buffer);
+        this.dv = new DataView(buffer);
+        this.pos = 0;
       }
-
-      try {
-        const [THREE, { OrbitControls }, { DFFLoader, TXDLoader }] = await Promise.all([
-          import('three'),
-          import('three/addons/controls/OrbitControls.js'),
-          import('dff-loader')
-        ]);
-        cached3DLibs = { THREE, OrbitControls, DFFLoader, TXDLoader };
-        return cached3DLibs;
-      } catch (primaryCdnErr) {
-        console.warn('Primary CDN (esm.sh) failed, trying jsDelivr fallback:', primaryCdnErr);
-        try {
-          const [THREE, { OrbitControls }, { DFFLoader, TXDLoader }] = await Promise.all([
-            import('https://cdn.jsdelivr.net/npm/three@0.170.0/+esm'),
-            import('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js/+esm'),
-            import('https://cdn.jsdelivr.net/npm/dff-loader@1.0.1/+esm')
-          ]);
-          cached3DLibs = { THREE, OrbitControls, DFFLoader, TXDLoader };
-          return cached3DLibs;
-        } catch (fallbackCdnErr) {
-          throw new Error(`Failed to load 3D library from primary (esm.sh) & backup (jsDelivr) CDN (${fallbackCdnErr.message}).`);
+      get length() { return this.u8.length; }
+      seek(p) { this.pos = p; }
+      skip(n) { this.pos += n; }
+      u8Read() { return this.u8[this.pos++]; }
+      u16() { const v = this.dv.getUint16(this.pos, true); this.pos += 2; return v; }
+      u32() { const v = this.dv.getUint32(this.pos, true); this.pos += 4; return v; }
+      f32() { const v = this.dv.getFloat32(this.pos, true); this.pos += 4; return v; }
+      bytes(len) {
+        const slice = this.u8.slice(this.pos, this.pos + len);
+        this.pos += len;
+        return slice;
+      }
+      str(len) {
+        let out = '';
+        for (let i = 0; i < len; i++) {
+          const c = this.u8[this.pos + i];
+          if (c === 0) break;
+          out += String.fromCharCode(c);
         }
+        this.pos += len;
+        return out;
+      }
+      chunkHeader() {
+        if (this.pos + 12 > this.length) return null;
+        const type = this.u32();
+        const size = this.u32();
+        const version = this.u32();
+        return { type, size, version, dataStart: this.pos, end: Math.min(this.length, this.pos + size) };
       }
     }
 
-    function createPedViewerInstance(libs, container, onStatus) {
-      const { THREE, OrbitControls, DFFLoader, TXDLoader } = libs;
+    const RwTexCodec = {
+      rgb565ToRgb(c) {
+        const r = (c >> 11) & 31;
+        const g = (c >> 5) & 63;
+        const b = c & 31;
+        return [(r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)];
+      },
+      decodeDXT(data, width, height, mode) {
+        const rgba = new Uint8ClampedArray(width * height * 4);
+        const bw = Math.max(1, (width + 3) >> 2);
+        const bh = Math.max(1, (height + 3) >> 2);
+        const blockBytes = mode === 1 ? 8 : 16;
+        let ptr = 0;
+
+        for (let by = 0; by < bh; by++) {
+          for (let bx = 0; bx < bw; bx++) {
+            if (ptr + blockBytes > data.length) break;
+            let alphaLUT = null;
+            let dxt3Alpha = 0n;
+
+            if (mode === 3) {
+              for (let i = 0; i < 8; i++) dxt3Alpha |= BigInt(data[ptr + i]) << BigInt(i * 8);
+              ptr += 8;
+            } else if (mode === 5) {
+              const a0 = data[ptr];
+              const a1 = data[ptr + 1];
+              const aTable = [a0, a1, 0, 0, 0, 0, 0, 0];
+              if (a0 > a1) {
+                for (let i = 1; i <= 6; i++) aTable[i + 1] = Math.round(((7 - i) * a0 + i * a1) / 7);
+              } else {
+                for (let i = 1; i <= 4; i++) aTable[i + 1] = Math.round(((5 - i) * a0 + i * a1) / 5);
+                aTable[6] = 0;
+                aTable[7] = 255;
+              }
+              let bits = 0n;
+              for (let i = 0; i < 6; i++) bits |= BigInt(data[ptr + 2 + i]) << BigInt(i * 8);
+              alphaLUT = new Uint8Array(16);
+              for (let i = 0; i < 16; i++) alphaLUT[i] = aTable[Number((bits >> BigInt(i * 3)) & 7n)];
+              ptr += 8;
+            }
+
+            const c0 = data[ptr] | (data[ptr + 1] << 8);
+            const c1 = data[ptr + 2] | (data[ptr + 3] << 8);
+            const lut = (data[ptr + 4]) | (data[ptr + 5] << 8) | (data[ptr + 6] << 16) | (data[ptr + 7] << 24);
+            ptr += 8;
+
+            const rgb0 = this.rgb565ToRgb(c0);
+            const rgb1 = this.rgb565ToRgb(c1);
+            const colors = [
+              [rgb0[0], rgb0[1], rgb0[2], 255],
+              [rgb1[0], rgb1[1], rgb1[2], 255],
+              [0, 0, 0, 255],
+              [0, 0, 0, 255]
+            ];
+
+            if (mode !== 1 || c0 > c1) {
+              colors[2] = [Math.round((2 * rgb0[0] + rgb1[0]) / 3), Math.round((2 * rgb0[1] + rgb1[1]) / 3), Math.round((2 * rgb0[2] + rgb1[2]) / 3), 255];
+              colors[3] = [Math.round((rgb0[0] + 2 * rgb1[0]) / 3), Math.round((rgb0[1] + 2 * rgb1[1]) / 3), Math.round((rgb0[2] + 2 * rgb1[2]) / 3), 255];
+            } else {
+              colors[2] = [Math.round((rgb0[0] + rgb1[0]) / 2), Math.round((rgb0[1] + rgb1[1]) / 2), Math.round((rgb0[2] + rgb1[2]) / 2), 255];
+              colors[3] = [0, 0, 0, 0];
+            }
+
+            for (let py = 0; py < 4; py++) {
+              const y = by * 4 + py;
+              if (y >= height) continue;
+              for (let px = 0; px < 4; px++) {
+                const x = bx * 4 + px;
+                if (x >= width) continue;
+                const idx = py * 4 + px;
+                const cIdx = (lut >>> (idx * 2)) & 3;
+                const col = colors[cIdx];
+                const dst = (y * width + x) * 4;
+                rgba[dst] = col[0];
+                rgba[dst + 1] = col[1];
+                rgba[dst + 2] = col[2];
+                if (mode === 3) {
+                  const a4 = Number((dxt3Alpha >> BigInt(idx * 4)) & 0xFn);
+                  rgba[dst + 3] = (a4 << 4) | a4;
+                } else if (mode === 5) {
+                  rgba[dst + 3] = alphaLUT[idx];
+                } else {
+                  rgba[dst + 3] = col[3];
+                }
+              }
+            }
+          }
+        }
+        return rgba;
+      }
+    };
+
+    function parseRwTxdBuffer(buffer) {
+      const r = new RwBinReader(buffer);
+      const root = r.chunkHeader();
+      if (!root || root.type !== RW_CHUNK_ID.TEXDICT) {
+        throw new Error('Invalid TXD file: Missing Texture Dictionary root.');
+      }
+      const structHdr = r.chunkHeader();
+      if (!structHdr || structHdr.size < 4) throw new Error('Invalid TXD struct header.');
+      const numTextures = r.u16();
+      r.u16(); // deviceId
+      r.seek(structHdr.end);
+
+      const textures = new Map();
+      for (let t = 0; t < numTextures; t++) {
+        const texNative = r.chunkHeader();
+        if (!texNative || texNative.type !== RW_CHUNK_ID.TEXNATIVE) break;
+        const tStruct = r.chunkHeader();
+        if (!tStruct) break;
+        const platformId = r.u32();
+        r.u8Read(); // filterMode
+        r.u8Read(); // uvAddr
+        r.u16();    // pad
+        const name = r.str(32);
+        const maskName = r.str(32);
+        const rasterFormat = r.u32();
+
+        let width = 0, height = 0, depth = 32, compression = 0;
+        if (platformId === 9) {
+          const d3dFormat = r.u32();
+          width = r.u16();
+          height = r.u16();
+          depth = r.u8Read();
+          r.u8Read(); // numLevels
+          r.u8Read(); // rasterType
+          r.u8Read(); // flags
+          if (d3dFormat === 0x31545844) compression = 1;
+          else if (d3dFormat === 0x33545844) compression = 3;
+          else if (d3dFormat === 0x35545844) compression = 5;
+        } else {
+          r.u32(); // hasAlpha
+          width = r.u16();
+          height = r.u16();
+          depth = r.u8Read();
+          r.u8Read(); // numLevels
+          r.u8Read(); // rasterType
+          compression = r.u8Read();
+        }
+
+        if (width <= 0 || height <= 0 || width > 8192 || height > 8192) {
+          r.seek(texNative.end);
+          continue;
+        }
+
+        const isPal8 = (rasterFormat & 0x2000) !== 0;
+        const isPal4 = (rasterFormat & 0x4000) !== 0;
+        let palette = null;
+        if (isPal8) palette = r.bytes(256 * 4);
+        else if (isPal4) palette = r.bytes(16 * 4);
+
+        const mip0Size = r.u32();
+        if (r.pos + mip0Size > texNative.end) {
+          r.seek(texNative.end);
+          continue;
+        }
+
+        const mip0Data = r.bytes(mip0Size);
+        let rgba = new Uint8ClampedArray(width * height * 4);
+
+        if (compression === 1 || compression === 3 || compression === 5) {
+          rgba = RwTexCodec.decodeDXT(mip0Data, width, height, compression);
+        } else if (isPal8 && palette) {
+          for (let i = 0; i < width * height && i < mip0Data.length; i++) {
+            const pIdx = mip0Data[i] * 4;
+            rgba[i * 4] = palette[pIdx];
+            rgba[i * 4 + 1] = palette[pIdx + 1];
+            rgba[i * 4 + 2] = palette[pIdx + 2];
+            rgba[i * 4 + 3] = palette[pIdx + 3];
+          }
+        } else if (isPal4 && palette) {
+          for (let i = 0; i < width * height; i++) {
+            const b = mip0Data[i >> 1] || 0;
+            const idx = (i & 1) === 0 ? (b & 0x0F) : ((b >> 4) & 0x0F);
+            const pIdx = idx * 4;
+            rgba[i * 4] = palette[pIdx];
+            rgba[i * 4 + 1] = palette[pIdx + 1];
+            rgba[i * 4 + 2] = palette[pIdx + 2];
+            rgba[i * 4 + 3] = palette[pIdx + 3];
+          }
+        } else if (depth === 32) {
+          const fmt = rasterFormat & 0x0F00;
+          for (let i = 0; i < width * height && i * 4 + 3 < mip0Data.length; i++) {
+            rgba[i * 4] = mip0Data[i * 4 + 2];
+            rgba[i * 4 + 1] = mip0Data[i * 4 + 1];
+            rgba[i * 4 + 2] = mip0Data[i * 4];
+            rgba[i * 4 + 3] = fmt === 0x0600 ? 255 : mip0Data[i * 4 + 3];
+          }
+        } else if (depth === 16) {
+          const fmt = rasterFormat & 0x0F00;
+          for (let i = 0; i < width * height && i * 2 + 1 < mip0Data.length; i++) {
+            const v = mip0Data[i * 2] | (mip0Data[i * 2 + 1] << 8);
+            if (fmt === 0x0200) {
+              const [rr, gg, bb] = RwTexCodec.rgb565ToRgb(v);
+              rgba[i * 4] = rr; rgba[i * 4 + 1] = gg; rgba[i * 4 + 2] = bb; rgba[i * 4 + 3] = 255;
+            } else if (fmt === 0x0300) {
+              rgba[i * 4] = ((v >> 8) & 0xF) * 17;
+              rgba[i * 4 + 1] = ((v >> 4) & 0xF) * 17;
+              rgba[i * 4 + 2] = (v & 0xF) * 17;
+              rgba[i * 4 + 3] = ((v >> 12) & 0xF) * 17;
+            } else {
+              rgba[i * 4] = (((v >> 10) & 31) << 3);
+              rgba[i * 4 + 1] = (((v >> 5) & 31) << 3);
+              rgba[i * 4 + 2] = ((v & 31) << 3);
+              rgba[i * 4 + 3] = (v & 0x8000) ? 255 : 0;
+            }
+          }
+        }
+
+        let hasAlpha = false;
+        for (let i = 3; i < rgba.length; i += 4) {
+          if (rgba[i] < 248) { hasAlpha = true; break; }
+        }
+
+        const cleanKey = name.trim().toLowerCase().replace(/\.(bmp|png|tga|dds)$/i, '');
+        textures.set(cleanKey, { name, maskName, width, height, rgba, hasAlpha });
+        r.seek(texNative.end);
+      }
+
+      return textures;
+    }
+
+    function parseRwDffBuffer(buffer) {
+      const r = new RwBinReader(buffer);
+      const clump = r.chunkHeader();
+      if (!clump || clump.type !== RW_CHUNK_ID.CLUMP) {
+        throw new Error('Invalid DFF file: Missing RW Clump root.');
+      }
+      const clumpStruct = r.chunkHeader();
+      if (!clumpStruct || clumpStruct.size < 12) throw new Error('Invalid DFF Clump struct.');
+      r.seek(clumpStruct.end);
+
+      const geometries = [];
+
+      const parseGeomChunk = (gEnd) => {
+        const gStruct = r.chunkHeader();
+        const flags = r.u32();
+        const numTriangles = r.u32();
+        const numVertices = r.u32();
+        r.u32(); // numMorphTargets
+        if (gStruct.version < 0x34000) r.skip(12);
+
+        const hasTex = (flags & 0x0004) !== 0;
+        const hasPrelit = (flags & 0x0008) !== 0;
+        const hasNormals = (flags & 0x0010) !== 0;
+        const hasTex2 = (flags & 0x0080) !== 0;
+
+        const dayColors = new Uint8Array(numVertices * 4);
+        if (hasPrelit) dayColors.set(r.bytes(numVertices * 4));
+        else dayColors.fill(255);
+
+        const uvs = new Float32Array(numVertices * 2);
+        if (hasTex || hasTex2) {
+          for (let i = 0; i < numVertices; i++) {
+            uvs[i * 2] = r.f32();
+            uvs[i * 2 + 1] = r.f32();
+          }
+          if (hasTex2) r.skip(numVertices * 8);
+        }
+
+        const rawTris = new Uint32Array(numTriangles * 3);
+        const rawTriMats = new Uint16Array(numTriangles);
+        for (let t = 0; t < numTriangles; t++) {
+          const v2 = r.u16();
+          const v1 = r.u16();
+          const matId = r.u16();
+          const v3 = r.u16();
+          rawTris[t * 3] = v1;
+          rawTris[t * 3 + 1] = v2;
+          rawTris[t * 3 + 2] = v3;
+          rawTriMats[t] = matId;
+        }
+
+        r.skip(16); // bounding sphere
+        const hasVerts = r.u32();
+        const hasNorms = r.u32();
+
+        const positions = new Float32Array(numVertices * 3);
+        if (hasVerts) {
+          for (let i = 0; i < numVertices * 3; i++) {
+            const v = r.f32();
+            positions[i] = Number.isFinite(v) ? v : 0;
+          }
+        }
+
+        const normals = new Float32Array(numVertices * 3);
+        if (hasNorms || hasNormals) {
+          for (let i = 0; i < numVertices * 3; i++) {
+            const v = r.f32();
+            normals[i] = Number.isFinite(v) ? v : 0;
+          }
+        }
+        r.seek(gStruct.end);
+
+        // Material List
+        const matListChunk = r.chunkHeader();
+        const mlStruct = r.chunkHeader();
+        const numMaterials = mlStruct ? r.u32() : 0;
+        if (mlStruct) r.seek(mlStruct.end);
+
+        const materials = [];
+        for (let m = 0; m < numMaterials; m++) {
+          const mChunk = r.chunkHeader();
+          if (!mChunk) break;
+          const mStruct = r.chunkHeader();
+          r.u32(); // mFlags
+          const color = [r.u8Read(), r.u8Read(), r.u8Read(), r.u8Read()];
+          r.u32(); // unused
+          const isTextured = r.u32();
+          r.seek(mStruct.end);
+
+          let texName = '';
+          if (isTextured) {
+            const texChunk = r.chunkHeader();
+            const tStruct = r.chunkHeader();
+            if (tStruct) r.seek(tStruct.end);
+            const s1 = r.chunkHeader();
+            if (s1 && s1.type === RW_CHUNK_ID.STRING) {
+              texName = r.str(s1.size);
+              r.seek(s1.end);
+            }
+            if (texChunk) r.seek(texChunk.end);
+          }
+          r.seek(mChunk.end);
+          materials.push({ index: m, color, isTextured: !!isTextured, texName });
+        }
+        if (matListChunk) r.seek(matListChunk.end);
+
+        // Geometry Extension (BinMesh PLG & ExtraVertColour PLG)
+        let binMeshSplits = null;
+        let nightColors = null;
+        const gExt = r.chunkHeader();
+        if (gExt && gExt.type === RW_CHUNK_ID.EXTENSION) {
+          while (r.pos < gExt.end) {
+            const sub = r.chunkHeader();
+            if (!sub) break;
+            if (sub.type === RW_CHUNK_ID.BINMESH_PLG) {
+              const bmFlags = r.u32();
+              const numSplits = r.u32();
+              r.u32(); // totalIdx
+              binMeshSplits = { isStrip: (bmFlags & 1) !== 0, splits: [] };
+              for (let s = 0; s < numSplits; s++) {
+                const idxCount = r.u32();
+                const matIdx = r.u32();
+                const indices = new Uint32Array(idxCount);
+                for (let k = 0; k < idxCount; k++) indices[k] = r.u32();
+                binMeshSplits.splits.push({ matIdx, indices });
+              }
+            } else if (sub.type === RW_CHUNK_ID.EXTRA_VERT_COL) {
+              const flag = r.u32();
+              if (flag !== 0 && sub.size >= 4 + numVertices * 4) {
+                nightColors = new Uint8Array(numVertices * 4);
+                nightColors.set(r.bytes(numVertices * 4));
+              }
+            }
+            r.seek(sub.end);
+          }
+        }
+        r.seek(gEnd);
+
+        const finalIndices = [];
+        const finalMatIds = [];
+        if (binMeshSplits && binMeshSplits.splits.length > 0) {
+          for (const sp of binMeshSplits.splits) {
+            const idx = sp.indices;
+            if (!binMeshSplits.isStrip) {
+              for (let i = 0; i + 2 < idx.length; i += 3) {
+                if (idx[i] < numVertices && idx[i + 1] < numVertices && idx[i + 2] < numVertices) {
+                  finalIndices.push(idx[i], idx[i + 1], idx[i + 2]);
+                  finalMatIds.push(sp.matIdx);
+                }
+              }
+            } else {
+              for (let i = 0; i + 2 < idx.length; i++) {
+                const a = idx[i], b = idx[i + 1], c = idx[i + 2];
+                if (a === b || b === c || a === c) continue;
+                if (a >= numVertices || b >= numVertices || c >= numVertices) continue;
+                if ((i & 1) === 0) finalIndices.push(a, b, c);
+                else finalIndices.push(a, c, b);
+                finalMatIds.push(sp.matIdx);
+              }
+            }
+          }
+        } else {
+          for (let t = 0; t < numTriangles; t++) {
+            finalIndices.push(rawTris[t * 3], rawTris[t * 3 + 1], rawTris[t * 3 + 2]);
+            finalMatIds.push(rawTriMats[t]);
+          }
+        }
+
+        // Auto-compute smooth vertex normals if source DFF lacked them
+        let normMag = 0;
+        for (let i = 0; i < normals.length; i++) normMag += Math.abs(normals[i]);
+        if (normMag < 1e-6) {
+          for (let ti = 0; ti < finalIndices.length; ti += 3) {
+            const a = finalIndices[ti], b = finalIndices[ti + 1], c = finalIndices[ti + 2];
+            const ax = positions[a * 3], ay = positions[a * 3 + 1], az = positions[a * 3 + 2];
+            const ux = positions[b * 3] - ax, uy = positions[b * 3 + 1] - ay, uz = positions[b * 3 + 2] - az;
+            const vx = positions[c * 3] - ax, vy = positions[c * 3 + 1] - ay, vz = positions[c * 3 + 2] - az;
+            const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+            for (const vi of [a, b, c]) {
+              normals[vi * 3] += nx;
+              normals[vi * 3 + 1] += ny;
+              normals[vi * 3 + 2] += nz;
+            }
+          }
+          for (let vi = 0; vi < numVertices; vi++) {
+            const nx = normals[vi * 3], ny = normals[vi * 3 + 1], nz = normals[vi * 3 + 2];
+            const len = Math.hypot(nx, ny, nz) || 1;
+            normals[vi * 3] = nx / len;
+            normals[vi * 3 + 1] = ny / len;
+            normals[vi * 3 + 2] = nz / len;
+          }
+        }
+
+        geometries.push({
+          numVertices,
+          positions,
+          normals,
+          uvs,
+          dayColors,
+          nightColors,
+          indices: new Uint32Array(finalIndices),
+          triMatIds: new Uint16Array(finalMatIds),
+          materials
+        });
+      };
+
+      while (r.pos < clump.end) {
+        const ch = r.chunkHeader();
+        if (!ch) break;
+        if (ch.type === RW_CHUNK_ID.GEOMLIST) {
+          const glStruct = r.chunkHeader();
+          const numGeoms = glStruct ? r.u32() : 0;
+          if (glStruct) r.seek(glStruct.end);
+          for (let g = 0; g < numGeoms; g++) {
+            const gChunk = r.chunkHeader();
+            if (!gChunk) break;
+            parseGeomChunk(gChunk.end);
+          }
+        }
+        r.seek(ch.end);
+      }
+
+      if (geometries.length === 0) throw new Error('No Geometry chunk found inside DFF.');
+      return geometries;
+    }
+
+    // =========================================================================
+    // 100% OFFLINE NATIVE WEBGL 3D ENGINE & ORBIT CONTROLS (ZERO CDN DEPENDENCY)
+    // =========================================================================
+    const OfflineMat4 = {
+      identity() {
+        return new Float32Array([
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1
+        ]);
+      },
+      multiply(a, b) {
+        const out = new Float32Array(16);
+        for (let c = 0; c < 4; c++) {
+          const b0 = b[c * 4], b1 = b[c * 4 + 1], b2 = b[c * 4 + 2], b3 = b[c * 4 + 3];
+          out[c * 4]     = a[0] * b0 + a[4] * b1 + a[8]  * b2 + a[12] * b3;
+          out[c * 4 + 1] = a[1] * b0 + a[5] * b1 + a[9]  * b2 + a[13] * b3;
+          out[c * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
+          out[c * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
+        }
+        return out;
+      },
+      perspective(fovDeg, aspect, near, far) {
+        const f = 1.0 / Math.tan((fovDeg * Math.PI) / 360);
+        const nf = 1 / (near - far);
+        return new Float32Array([
+          f / aspect, 0, 0, 0,
+          0, f, 0, 0,
+          0, 0, (far + near) * nf, -1,
+          0, 0, 2 * far * near * nf, 0
+        ]);
+      },
+      lookAt(eye, target, up) {
+        let zx = eye[0] - target[0], zy = eye[1] - target[1], zz = eye[2] - target[2];
+        let zLen = Math.hypot(zx, zy, zz) || 1;
+        zx /= zLen; zy /= zLen; zz /= zLen;
+
+        let xx = up[1] * zz - up[2] * zy;
+        let xy = up[2] * zx - up[0] * zz;
+        let xz = up[0] * zy - up[1] * zx;
+        let xLen = Math.hypot(xx, xy, xz) || 1;
+        xx /= xLen; xy /= xLen; xz /= xLen;
+
+        const yx = zy * xz - zz * xy;
+        const yy = zz * xx - zx * xz;
+        const yz = zx * xy - zy * xx;
+
+        return new Float32Array([
+          xx, yx, zx, 0,
+          xy, yy, zy, 0,
+          xz, yz, zz, 0,
+          -(xx * eye[0] + xy * eye[1] + xz * eye[2]),
+          -(yx * eye[0] + yy * eye[1] + yz * eye[2]),
+          -(zx * eye[0] + zy * eye[1] + zz * eye[2]),
+          1
+        ]);
+      },
+      fromTranslationRotationXYZ(px, py, pz, rx, ry, rz) {
+        const cx = Math.cos(rx), sx = Math.sin(rx);
+        const cy = Math.cos(ry), sy = Math.sin(ry);
+        const cz = Math.cos(rz), sz = Math.sin(rz);
+
+        // Rx * Ry * Rz
+        const m00 = cy * cz;
+        const m01 = -cy * sz;
+        const m02 = sy;
+
+        const m10 = sx * sy * cz + cx * sz;
+        const m11 = -sx * sy * sz + cx * cz;
+        const m12 = -sx * cy;
+
+        const m20 = -cx * sy * cz + sx * sz;
+        const m21 = cx * sy * sz + sx * cz;
+        const m22 = cx * cy;
+
+        return new Float32Array([
+          m00, m10, m20, 0,
+          m01, m11, m21, 0,
+          m02, m12, m22, 0,
+          px,  py,  pz,  1
+        ]);
+      }
+    };
+
+    async function load3DLibraries() {
+      // 100% offline: uses built-in native WebGL engine with zero network calls
+      return { offlineWebGL: true };
+    }
+
+    function createPedViewerInstance(_libs, container, onStatus) {
       let disposed = false;
 
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color('#20252e');
+      const canvas = document.createElement('canvas');
+      canvas.className = 'three-canvas';
+      container.appendChild(canvas);
 
-      const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 10000);
-      camera.position.set(2.8, 1.8, 3.8);
+      const gl = canvas.getContext('webgl', { antialias: true, alpha: false, powerPreference: 'default' })
+              || canvas.getContext('experimental-webgl', { antialias: true, alpha: false });
+      if (!gl) {
+        throw new Error('WebGL is not supported or disabled in this browser.');
+      }
 
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'default' });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
-      renderer.domElement.className = 'three-canvas';
-      container.appendChild(renderer.domElement);
+      const uintIndexExt = gl.getExtension('OES_element_index_uint');
 
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.07;
-      controls.target.set(0, 0.9, 0);
-      controls.minDistance = 0.25;
-      controls.maxDistance = 100;
+      const compileShader = (type, src) => {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, src);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          const info = gl.getShaderInfoLog(shader);
+          gl.deleteShader(shader);
+          throw new Error(`WebGL shader compile error: ${info}`);
+        }
+        return shader;
+      };
 
-      scene.add(new THREE.HemisphereLight(0xc9d9f2, 0x39313a, 2.0));
-      const key = new THREE.DirectionalLight(0xffe2bb, 3.0);
-      key.position.set(3, 6, 4);
-      scene.add(key);
-      const fill = new THREE.DirectionalLight(0x8caeea, 1.2);
-      fill.position.set(-4, 2, -3);
-      scene.add(fill);
+      const linkProgram = (vsSrc, fsSrc) => {
+        const vs = compileShader(gl.VERTEX_SHADER, vsSrc);
+        const fs = compileShader(gl.FRAGMENT_SHADER, fsSrc);
+        const prog = gl.createProgram();
+        gl.attachShader(prog, vs);
+        gl.attachShader(prog, fs);
+        gl.linkProgram(prog);
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+          const info = gl.getProgramInfoLog(prog);
+          gl.deleteProgram(prog);
+          throw new Error(`WebGL program link error: ${info}`);
+        }
+        return prog;
+      };
 
-      const grid = new THREE.GridHelper(16, 32, 0x596273, 0x343b48);
-      scene.add(grid);
+      // Grid line shader program
+      const lineProgram = linkProgram(
+        `attribute vec3 aPos;
+         attribute vec3 aColor;
+         uniform mat4 uProj;
+         uniform mat4 uView;
+         varying vec3 vColor;
+         void main() {
+           vColor = aColor;
+           gl_Position = uProj * uView * vec4(aPos, 1.0);
+         }`,
+        `precision mediump float;
+         varying vec3 vColor;
+         void main() {
+           gl_FragColor = vec4(vColor, 1.0);
+         }`
+      );
 
-      let modelPivot = null;
-      let modelRoot = null;
-      let textureMap = null;
+      // Ped mesh shader program (Hemisphere + Key/Fill Directional + Prelight + Texture + AlphaTest)
+      const meshProgram = linkProgram(
+        `attribute vec3 aPos;
+         attribute vec3 aNormal;
+         attribute vec2 aUv;
+         attribute vec3 aColor;
+         uniform mat4 uProj;
+         uniform mat4 uView;
+         uniform mat4 uModel;
+         varying vec3 vNormal;
+         varying vec2 vUv;
+         varying vec3 vColor;
+         void main() {
+           vNormal = mat3(uModel) * aNormal;
+           vUv = aUv;
+           vColor = aColor;
+           gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
+         }`,
+        `precision mediump float;
+         uniform vec4 uBaseColor;
+         uniform int uHasMap;
+         uniform sampler2D uMap;
+         uniform float uAlphaTest;
+         uniform int uWireframe;
+         uniform vec3 uHemiSky;
+         uniform vec3 uHemiGround;
+         uniform float uHemiIntensity;
+         uniform vec3 uKeyDir;
+         uniform vec3 uKeyColor;
+         uniform vec3 uFillDir;
+         uniform vec3 uFillColor;
+         varying vec3 vNormal;
+         varying vec2 vUv;
+         varying vec3 vColor;
+         void main() {
+           vec4 texel = (uHasMap == 1) ? texture2D(uMap, vUv) : vec4(1.0);
+           vec4 albedo = texel * uBaseColor;
+           if (uAlphaTest > 0.0 && albedo.a < uAlphaTest) discard;
+           if (uWireframe == 1) {
+             gl_FragColor = vec4(albedo.rgb * vColor * 1.15 + vec3(0.14), 1.0);
+             return;
+           }
+           vec3 n = normalize(vNormal);
+           if (!gl_FrontFacing) n = -n;
+           float hemiFactor = clamp(n.y * 0.5 + 0.5, 0.0, 1.0);
+           vec3 hemi = mix(uHemiGround, uHemiSky, hemiFactor) * uHemiIntensity;
+           float diffKey = max(dot(n, normalize(uKeyDir)), 0.0);
+           float diffFill = max(dot(n, normalize(uFillDir)), 0.0);
+           vec3 lighting = hemi + uKeyColor * diffKey + uFillColor * diffFill;
+           vec3 lit = albedo.rgb * vColor * lighting;
+           lit = (lit * 1.12) / (1.0 + lit * 0.22);
+           gl_FragColor = vec4(lit, albedo.a);
+         }`
+      );
+
+      const lineLoc = {
+        aPos: gl.getAttribLocation(lineProgram, 'aPos'),
+        aColor: gl.getAttribLocation(lineProgram, 'aColor'),
+        uProj: gl.getUniformLocation(lineProgram, 'uProj'),
+        uView: gl.getUniformLocation(lineProgram, 'uView')
+      };
+
+      const meshLoc = {
+        aPos: gl.getAttribLocation(meshProgram, 'aPos'),
+        aNormal: gl.getAttribLocation(meshProgram, 'aNormal'),
+        aUv: gl.getAttribLocation(meshProgram, 'aUv'),
+        aColor: gl.getAttribLocation(meshProgram, 'aColor'),
+        uProj: gl.getUniformLocation(meshProgram, 'uProj'),
+        uView: gl.getUniformLocation(meshProgram, 'uView'),
+        uModel: gl.getUniformLocation(meshProgram, 'uModel'),
+        uBaseColor: gl.getUniformLocation(meshProgram, 'uBaseColor'),
+        uHasMap: gl.getUniformLocation(meshProgram, 'uHasMap'),
+        uMap: gl.getUniformLocation(meshProgram, 'uMap'),
+        uAlphaTest: gl.getUniformLocation(meshProgram, 'uAlphaTest'),
+        uWireframe: gl.getUniformLocation(meshProgram, 'uWireframe'),
+        uHemiSky: gl.getUniformLocation(meshProgram, 'uHemiSky'),
+        uHemiGround: gl.getUniformLocation(meshProgram, 'uHemiGround'),
+        uHemiIntensity: gl.getUniformLocation(meshProgram, 'uHemiIntensity'),
+        uKeyDir: gl.getUniformLocation(meshProgram, 'uKeyDir'),
+        uKeyColor: gl.getUniformLocation(meshProgram, 'uKeyColor'),
+        uFillDir: gl.getUniformLocation(meshProgram, 'uFillDir'),
+        uFillColor: gl.getUniformLocation(meshProgram, 'uFillColor')
+      };
+
+      // Build 16x16 floor grid (32 divisions)
+      const gridData = [];
+      const halfSize = 8;
+      const divisions = 32;
+      const step = (halfSize * 2) / divisions;
+      for (let i = 0; i <= divisions; i++) {
+        const coord = -halfSize + i * step;
+        const isCenter = i === divisions / 2;
+        const col = isCenter ? [0.349, 0.384, 0.451] : [0.204, 0.231, 0.282];
+        gridData.push(-halfSize, 0, coord, ...col, halfSize, 0, coord, ...col);
+        gridData.push(coord, 0, -halfSize, ...col, coord, 0, halfSize, ...col);
+      }
+      const gridVertCount = gridData.length / 6;
+      const gridBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, gridBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gridData), gl.STATIC_DRAW);
+
+      // Camera & damped OrbitControls state
+      const camera = {
+        fov: 38,
+        aspect: 1,
+        near: 0.01,
+        far: 1000,
+        eye: [2.8, 1.8, 3.8],
+        target: [0, 0.9, 0],
+        spherical: { radius: 4.8, theta: 0.63, phi: 1.38 },
+        sphericalDelta: { radius: 0, theta: 0, phi: 0 },
+        panOffset: [0, 0, 0],
+        minDistance: 0.25,
+        maxDistance: 100
+      };
+
+      const syncSphericalFromEye = () => {
+        const dx = camera.eye[0] - camera.target[0];
+        const dy = camera.eye[1] - camera.target[1];
+        const dz = camera.eye[2] - camera.target[2];
+        const r = Math.max(1e-4, Math.hypot(dx, dy, dz));
+        camera.spherical.radius = r;
+        camera.spherical.phi = Math.acos(Math.max(-1, Math.min(1, dy / r)));
+        camera.spherical.theta = Math.atan2(dx, dz);
+      };
+      syncSphericalFromEye();
+
+      const updateControls = () => {
+        const damp = 0.07;
+        camera.spherical.theta += camera.sphericalDelta.theta * damp;
+        camera.spherical.phi += camera.sphericalDelta.phi * damp;
+        camera.spherical.radius += camera.sphericalDelta.radius * damp;
+
+        camera.sphericalDelta.theta *= (1 - damp);
+        camera.sphericalDelta.phi *= (1 - damp);
+        camera.sphericalDelta.radius *= (1 - damp);
+
+        camera.target[0] += camera.panOffset[0] * damp;
+        camera.target[1] += camera.panOffset[1] * damp;
+        camera.target[2] += camera.panOffset[2] * damp;
+        camera.panOffset[0] *= (1 - damp);
+        camera.panOffset[1] *= (1 - damp);
+        camera.panOffset[2] *= (1 - damp);
+
+        camera.spherical.phi = Math.max(0.04, Math.min(Math.PI - 0.04, camera.spherical.phi));
+        camera.spherical.radius = Math.max(camera.minDistance, Math.min(camera.maxDistance, camera.spherical.radius));
+
+        const sinPhi = Math.sin(camera.spherical.phi);
+        camera.eye[0] = camera.target[0] + camera.spherical.radius * sinPhi * Math.sin(camera.spherical.theta);
+        camera.eye[1] = camera.target[1] + camera.spherical.radius * Math.cos(camera.spherical.phi);
+        camera.eye[2] = camera.target[2] + camera.spherical.radius * sinPhi * Math.cos(camera.spherical.theta);
+      };
+
+      // Pointer & Wheel handlers
+      let dragMode = null; // 'orbit' | 'pan'
+      let prevPointer = { x: 0, y: 0 };
+
+      const onContextMenu = (e) => e.preventDefault();
+      const onPointerDown = (e) => {
+        prevPointer = { x: e.clientX, y: e.clientY };
+        if (e.button === 2 || e.button === 1 || e.shiftKey) dragMode = 'pan';
+        else if (e.button === 0) dragMode = 'orbit';
+        canvas.setPointerCapture?.(e.pointerId);
+      };
+      const onPointerMove = (e) => {
+        if (!dragMode) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        const h = Math.max(1, container.clientHeight);
+
+        if (dragMode === 'orbit') {
+          camera.sphericalDelta.theta -= (2 * Math.PI * dx) / h * 2.2;
+          camera.sphericalDelta.phi -= (2 * Math.PI * dy) / h * 2.2;
+        } else if (dragMode === 'pan') {
+          const distScale = camera.spherical.radius * Math.tan((camera.fov * Math.PI) / 360) * 2 / h;
+          const viewMat = OfflineMat4.lookAt(camera.eye, camera.target, [0, 1, 0]);
+          const rightX = viewMat[0], rightY = viewMat[4], rightZ = viewMat[8];
+          const upX = viewMat[1], upY = viewMat[5], upZ = viewMat[9];
+          const panX = -dx * distScale;
+          const panY = dy * distScale;
+          camera.panOffset[0] += (rightX * panX + upX * panY) * 2.2;
+          camera.panOffset[1] += (rightY * panX + upY * panY) * 2.2;
+          camera.panOffset[2] += (rightZ * panX + upZ * panY) * 2.2;
+        }
+      };
+      const onPointerUp = (e) => {
+        dragMode = null;
+        canvas.releasePointerCapture?.(e.pointerId);
+      };
+      const onWheel = (e) => {
+        e.preventDefault();
+        const factor = e.deltaY > 0 ? 1.14 : 0.88;
+        const targetRadius = Math.max(camera.minDistance, Math.min(camera.maxDistance, camera.spherical.radius * factor));
+        camera.sphericalDelta.radius += (targetRadius - camera.spherical.radius) * 1.6;
+      };
+
+      canvas.addEventListener('contextmenu', onContextMenu);
+      canvas.addEventListener('pointerdown', onPointerDown);
+      canvas.addEventListener('pointermove', onPointerMove);
+      canvas.addEventListener('pointerup', onPointerUp);
+      canvas.addEventListener('wheel', onWheel, { passive: false });
+
+      // Lighting & scene state
+      const sceneState = {
+        bg: [0.125, 0.145, 0.180],
+        hemiSky: [0.859, 0.910, 1.0],
+        hemiGround: [0.231, 0.200, 0.251],
+        hemiIntensity: 1.05,
+        keyDir: [3, 6, 4],
+        keyColor: [1.0, 0.902, 0.769],
+        fillDir: [-4, 2, -3],
+        fillColor: [0.35, 0.44, 0.58]
+      };
+
+      let meshEntries = [];
+      let builtTextures = [];
       let wireframe = false;
+      let isDayLight = true;
+      let autoBaseRot = { x: 0, y: 0, z: 0 };
+      let userRotOffset = { x: 0, y: 0, z: 0 };
+      let rootOffset = { x: 0, y: 0, z: 0 };
+      let modelMatrix = OfflineMat4.identity();
       let rafId = 0;
 
       const resize = () => {
         if (disposed || !container) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const w = Math.max(1, container.clientWidth);
         const h = Math.max(1, container.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
         camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        renderer.setSize(w, h, false);
+        gl.viewport(0, 0, canvas.width, canvas.height);
       };
 
       const resizeObserver = new ResizeObserver(resize);
       resizeObserver.observe(container);
       resize();
 
-      const animate = () => {
-        if (disposed) return;
-        rafId = requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-      };
-      rafId = requestAnimationFrame(animate);
-
       const clearModel = () => {
-        if (modelPivot) {
-          scene.remove(modelPivot);
-          modelPivot = null;
-        }
-        if (modelRoot) {
-          modelRoot.traverse(obj => {
-            obj.geometry?.dispose();
-            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-            mats.forEach(mat => {
-              if (!mat) return;
-              mat.map?.dispose();
-              mat.normalMap?.dispose();
-              mat.specularMap?.dispose();
-              mat.alphaMap?.dispose();
-              mat.dispose();
-            });
-          });
-          modelRoot = null;
-        }
-        if (textureMap) {
-          for (const tex of textureMap.values()) {
-            if (tex && typeof tex.dispose === 'function') {
-              if (tex.image && typeof tex.image.close === 'function') tex.image.close();
-              tex.dispose();
-            }
+        for (const m of meshEntries) {
+          gl.deleteBuffer(m.posBuf);
+          gl.deleteBuffer(m.normBuf);
+          gl.deleteBuffer(m.uvBuf);
+          gl.deleteBuffer(m.dayColorBuf);
+          if (m.nightColorBuf) gl.deleteBuffer(m.nightColorBuf);
+          for (const g of m.groups) {
+            gl.deleteBuffer(g.triIdxBuf);
+            gl.deleteBuffer(g.wireIdxBuf);
           }
-          textureMap.clear();
-          textureMap = null;
         }
+        meshEntries = [];
+        for (const tex of builtTextures) gl.deleteTexture(tex);
+        builtTextures = [];
+      };
+
+      const computeModelBox = (mat) => {
+        let minX = Infinity, minY = Infinity, minZ = Infinity;
+        let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+        let hasPts = false;
+        for (const m of meshEntries) {
+          const p = m.positions;
+          for (let i = 0; i < p.length; i += 3) {
+            const x = p[i], y = p[i + 1], z = p[i + 2];
+            const tx = mat[0] * x + mat[4] * y + mat[8]  * z + mat[12];
+            const ty = mat[1] * x + mat[5] * y + mat[9]  * z + mat[13];
+            const tz = mat[2] * x + mat[6] * y + mat[10] * z + mat[14];
+            if (tx < minX) minX = tx;
+            if (ty < minY) minY = ty;
+            if (tz < minZ) minZ = tz;
+            if (tx > maxX) maxX = tx;
+            if (ty > maxY) maxY = ty;
+            if (tz > maxZ) maxZ = tz;
+            hasPts = true;
+          }
+        }
+        if (!hasPts) return null;
+        return {
+          min: [minX, minY, minZ],
+          max: [maxX, maxY, maxZ],
+          size: [maxX - minX, maxY - minY, maxZ - minZ],
+          center: [(minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5]
+        };
+      };
+
+      const rebuildModelMatrix = () => {
+        const pivotMat = OfflineMat4.fromTranslationRotationXYZ(
+          0, 0, 0,
+          autoBaseRot.x + userRotOffset.x,
+          autoBaseRot.y + userRotOffset.y,
+          autoBaseRot.z + userRotOffset.z
+        );
+        const rootMat = OfflineMat4.fromTranslationRotationXYZ(rootOffset.x, rootOffset.y, rootOffset.z, 0, 0, 0);
+        modelMatrix = OfflineMat4.multiply(pivotMat, rootMat);
+        return pivotMat;
       };
 
       const alignToFloorAndCenter = () => {
-        if (!modelPivot || !modelRoot) return;
-        modelRoot.position.set(0, 0, 0);
-        modelPivot.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(modelPivot);
-        if (box.isEmpty()) return;
-        const center = box.getCenter(new THREE.Vector3());
-        modelRoot.position.set(-center.x, -box.min.y, -center.z);
-        modelPivot.updateMatrixWorld(true);
+        if (meshEntries.length === 0) return;
+        rootOffset = { x: 0, y: 0, z: 0 };
+        const pivotMat = rebuildModelMatrix();
+        const box = computeModelBox(pivotMat);
+        if (!box) return;
+        rootOffset = { x: -box.center[0], y: -box.min[1], z: -box.center[2] };
+        rebuildModelMatrix();
       };
 
       const fitModel = () => {
-        if (!modelPivot) return;
+        if (meshEntries.length === 0) return;
         alignToFloorAndCenter();
-        const box = new THREE.Box3().setFromObject(modelPivot);
-        if (box.isEmpty()) return;
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z, 0.1);
-        controls.target.copy(center);
-        camera.position.set(center.x + maxDim * 1.15, center.y + maxDim * 0.35, center.z + maxDim * 1.55);
+        const box = computeModelBox(modelMatrix);
+        if (!box) return;
+        const maxDim = Math.max(box.size[0], box.size[1], box.size[2], 0.1);
+        camera.target = [...box.center];
+        camera.eye = [
+          box.center[0] + maxDim * 1.15,
+          box.center[1] + maxDim * 0.35,
+          box.center[2] + maxDim * 1.55
+        ];
         camera.near = Math.max(maxDim / 1000, 0.001);
         camera.far = maxDim * 100;
-        camera.updateProjectionMatrix();
-        controls.minDistance = maxDim * 0.15;
-        controls.maxDistance = maxDim * 20;
-        controls.update();
+        camera.minDistance = maxDim * 0.15;
+        camera.maxDistance = maxDim * 20;
+        camera.sphericalDelta = { radius: 0, theta: 0, phi: 0 };
+        camera.panOffset = [0, 0, 0];
+        syncSphericalFromEye();
       };
 
-      const compute3DStats = () => {
-        let vertices = 0;
-        let triangles = 0;
-        let meshes = 0;
-        const materials = new Set();
-        modelRoot?.traverse(obj => {
-          if (obj.isMesh || obj.isSkinnedMesh) {
-            meshes++;
-            const g = obj.geometry;
-            if (g?.attributes?.position) vertices += g.attributes.position.count;
-            if (g?.index) triangles += Math.round(g.index.count / 3);
-            else if (g?.attributes?.position) triangles += Math.round(g.attributes.position.count / 3);
-            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-            mats.forEach(m => { if (m) materials.add(m); });
-          }
-        });
-        return { vertices, triangles, meshes, materials: materials.size };
+      const buildVertexColorFloatArray = (u8Colors, numVerts) => {
+        const out = new Float32Array(numVerts * 3);
+        for (let i = 0; i < numVerts; i++) {
+          out[i * 3] = (u8Colors ? u8Colors[i * 4] : 255) / 255;
+          out[i * 3 + 1] = (u8Colors ? u8Colors[i * 4 + 1] : 255) / 255;
+          out[i * 3 + 2] = (u8Colors ? u8Colors[i * 4 + 2] : 255) / 255;
+        }
+        return out;
       };
+
+      const createGlBuffer = (target, typedArr) => {
+        const buf = gl.createBuffer();
+        gl.bindBuffer(target, buf);
+        gl.bufferData(target, typedArr, gl.STATIC_DRAW);
+        return buf;
+      };
+
+      const renderFrame = () => {
+        if (disposed) return;
+        rafId = requestAnimationFrame(renderFrame);
+        updateControls();
+
+        gl.clearColor(sceneState.bg[0], sceneState.bg[1], sceneState.bg[2], 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthMask(true);
+
+        const projMat = OfflineMat4.perspective(camera.fov, camera.aspect, camera.near, camera.far);
+        const viewMat = OfflineMat4.lookAt(camera.eye, camera.target, [0, 1, 0]);
+
+        // 1. Render floor grid
+        gl.useProgram(lineProgram);
+        gl.uniformMatrix4fv(lineLoc.uProj, false, projMat);
+        gl.uniformMatrix4fv(lineLoc.uView, false, viewMat);
+        gl.bindBuffer(gl.ARRAY_BUFFER, gridBuffer);
+        gl.enableVertexAttribArray(lineLoc.aPos);
+        gl.vertexAttribPointer(lineLoc.aPos, 3, gl.FLOAT, false, 24, 0);
+        gl.enableVertexAttribArray(lineLoc.aColor);
+        gl.vertexAttribPointer(lineLoc.aColor, 3, gl.FLOAT, false, 24, 12);
+        gl.drawArrays(gl.LINES, 0, gridVertCount);
+
+        if (meshEntries.length === 0) return;
+
+        // 2. Render ped meshes (opaque pass first, alpha-blended pass second)
+        gl.useProgram(meshProgram);
+        gl.uniformMatrix4fv(meshLoc.uProj, false, projMat);
+        gl.uniformMatrix4fv(meshLoc.uView, false, viewMat);
+        gl.uniformMatrix4fv(meshLoc.uModel, false, modelMatrix);
+        gl.uniform3fv(meshLoc.uHemiSky, sceneState.hemiSky);
+        gl.uniform3fv(meshLoc.uHemiGround, sceneState.hemiGround);
+        gl.uniform1f(meshLoc.uHemiIntensity, sceneState.hemiIntensity);
+        gl.uniform3fv(meshLoc.uKeyDir, sceneState.keyDir);
+        gl.uniform3fv(meshLoc.uKeyColor, sceneState.keyColor);
+        gl.uniform3fv(meshLoc.uFillDir, sceneState.fillDir);
+        gl.uniform3fv(meshLoc.uFillColor, sceneState.fillColor);
+        gl.uniform1i(meshLoc.uWireframe, wireframe ? 1 : 0);
+        gl.uniform1i(meshLoc.uMap, 0);
+
+        for (let pass = 0; pass < 2; pass++) {
+          const isTransparentPass = pass === 1;
+          if (isTransparentPass) {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          } else {
+            gl.disable(gl.BLEND);
+          }
+
+          for (const m of meshEntries) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, m.posBuf);
+            gl.enableVertexAttribArray(meshLoc.aPos);
+            gl.vertexAttribPointer(meshLoc.aPos, 3, gl.FLOAT, false, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, m.normBuf);
+            gl.enableVertexAttribArray(meshLoc.aNormal);
+            gl.vertexAttribPointer(meshLoc.aNormal, 3, gl.FLOAT, false, 0, 0);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, m.uvBuf);
+            gl.enableVertexAttribArray(meshLoc.aUv);
+            gl.vertexAttribPointer(meshLoc.aUv, 2, gl.FLOAT, false, 0, 0);
+
+            const activeColorBuf = (!isDayLight && m.nightColorBuf) ? m.nightColorBuf : m.dayColorBuf;
+            gl.bindBuffer(gl.ARRAY_BUFFER, activeColorBuf);
+            gl.enableVertexAttribArray(meshLoc.aColor);
+            gl.vertexAttribPointer(meshLoc.aColor, 3, gl.FLOAT, false, 0, 0);
+
+            for (const grp of m.groups) {
+              if (!wireframe && grp.transparent !== isTransparentPass) continue;
+              if (wireframe && isTransparentPass) continue;
+
+              gl.uniform4fv(meshLoc.uBaseColor, grp.baseColor);
+              gl.uniform1f(meshLoc.uAlphaTest, grp.alphaTest);
+              if (grp.glTex) {
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, grp.glTex);
+                gl.uniform1i(meshLoc.uHasMap, 1);
+              } else {
+                gl.uniform1i(meshLoc.uHasMap, 0);
+              }
+
+              if (wireframe) {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grp.wireIdxBuf);
+                gl.drawElements(gl.LINES, grp.wireCount, grp.idxType, 0);
+              } else {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, grp.triIdxBuf);
+                gl.drawElements(gl.TRIANGLES, grp.triCount, grp.idxType, 0);
+              }
+            }
+          }
+        }
+        gl.disable(gl.BLEND);
+      };
+      rafId = requestAnimationFrame(renderFrame);
 
       return {
         get wireframe() { return wireframe; },
+        get isDayLight() { return isDayLight; },
         async loadPed(dffBuffer, txdBuffer) {
           if (disposed) return;
           clearModel();
-          let texCount = 0;
-          let fallbackNote = '';
 
+          let texDict = new Map();
           let txdNote = '';
           if (txdBuffer) {
             try {
-              const txdParser = new TXDLoader();
-              textureMap = txdParser.parse(txdBuffer);
-              texCount = textureMap ? textureMap.size : 0;
+              texDict = parseRwTxdBuffer(txdBuffer);
             } catch (txdErr) {
-              console.warn('TXD parse warning, falling back to untextured DFF:', txdErr);
-              textureMap = null;
-              txdNote = ' (TXD Compression/Palette Unsupported — Untextured)';
+              console.warn('TXD parse warning:', txdErr);
+              txdNote = ' (TXD Warning — Untextured)';
             }
           }
 
-          let nextModel = null;
-          try {
-            const dffParser = new DFFLoader();
-            if (textureMap) dffParser.setTextureDictionary(textureMap);
-            nextModel = dffParser.parse(dffBuffer);
-          } catch (primaryErr) {
-            console.warn('Primary DFF parse failed, attempting fallbacks:', primaryErr);
-            if (textureMap && textureMap.size > 0) {
-              try {
-                const safeTexDict = new Map();
-                for (const [k, tex] of textureMap.entries()) {
-                  if (tex) safeTexDict.set(k.toLowerCase(), tex);
-                }
-                const safeProxyDict = {
-                  get: (k) => safeTexDict.get(String(k || '').toLowerCase()) || null,
-                  has: (k) => safeTexDict.has(String(k || '').toLowerCase()),
-                  size: safeTexDict.size,
-                  values: () => safeTexDict.values(),
-                  entries: () => safeTexDict.entries()
-                };
-                const texRetryParser = new DFFLoader();
-                texRetryParser.setTextureDictionary(safeProxyDict);
-                nextModel = texRetryParser.parse(dffBuffer);
-                fallbackNote = ' (Safe-Texture Fallback — Specular/Material PLG Bypassed)';
-              } catch (safeTexErr) {
-                console.warn('Safe-texture retry failed, falling back to geometry-only DFF:', safeTexErr);
-              }
+          // Upload decoded TXD textures directly to WebGL
+          const glTexMap = new Map();
+          gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+          for (const [key, entry] of texDict.entries()) {
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(
+              gl.TEXTURE_2D, 0, gl.RGBA,
+              entry.width, entry.height, 0,
+              gl.RGBA, gl.UNSIGNED_BYTE,
+              new Uint8Array(entry.rgba.buffer)
+            );
+            const isPot = (entry.width & (entry.width - 1)) === 0 && (entry.height & (entry.height - 1)) === 0;
+            if (isPot) {
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+              gl.generateMipmap(gl.TEXTURE_2D);
+            } else {
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            }
+            builtTextures.push(tex);
+            glTexMap.set(key, { tex, hasAlpha: entry.hasAlpha });
+          }
+
+          const dffGeoms = parseRwDffBuffer(dffBuffer);
+          let totalVerts = 0;
+          let totalTris = 0;
+          let totalMeshes = 0;
+          let totalMats = 0;
+
+          for (const g of dffGeoms) {
+            const matCount = Math.max(1, g.materials.length);
+            totalMats += matCount;
+
+            const buckets = Array.from({ length: matCount }, () => []);
+            const numTris = g.indices.length / 3;
+            for (let t = 0; t < numTris; t++) {
+              const mId = Math.max(0, Math.min(matCount - 1, g.triMatIds[t] | 0));
+              buckets[mId].push(g.indices[t * 3], g.indices[t * 3 + 1], g.indices[t * 3 + 2]);
             }
 
-            if (!nextModel) {
-              try {
-                const retryParser = new DFFLoader();
-                nextModel = retryParser.parse(dffBuffer);
-                fallbackNote = txdNote || ' (Untextured Mesh Fallback — Non-standard RW material section)';
-              } catch (secondaryErr) {
-                console.warn('Geometry-only DFF parse also failed, showing proxy silhouette:', secondaryErr);
-                const proxyGroup = new THREE.Group();
-                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.65, wireframe: true });
-                const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 1.35, 16), bodyMat);
-                torso.position.y = 0.675;
-                const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), bodyMat);
-                head.position.y = 1.55;
-                proxyGroup.add(torso, head);
-                nextModel = proxyGroup;
-                fallbackNote = ` (3D Preview Unsupported by Web Parser: ${secondaryErr.message} — Valid in GTA SA)`;
+            const useUint32 = Boolean(uintIndexExt) && g.numVertices > 65535;
+            const idxType = useUint32 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+            const IndexArrayCtor = useUint32 ? Uint32Array : Uint16Array;
+
+            const groups = [];
+            let geomTriIdxCount = 0;
+            for (let m = 0; m < matCount; m++) {
+              const b = buckets[m];
+              if (b.length === 0) continue;
+              geomTriIdxCount += b.length;
+
+              const srcMat = g.materials[m] || { color: [255, 255, 255, 255], texName: '' };
+              const cleanName = (srcMat.texName || '').trim().toLowerCase().replace(/\.(bmp|png|tga|dds)$/i, '');
+              const texEntry = cleanName ? glTexMap.get(cleanName) : null;
+              const col = srcMat.color || [255, 255, 255, 255];
+
+              const triArr = new IndexArrayCtor(b);
+              const wireArr = new IndexArrayCtor(b.length * 2);
+              for (let i = 0, w = 0; i < b.length; i += 3) {
+                wireArr[w++] = b[i];     wireArr[w++] = b[i + 1];
+                wireArr[w++] = b[i + 1]; wireArr[w++] = b[i + 2];
+                wireArr[w++] = b[i + 2]; wireArr[w++] = b[i];
               }
+
+              groups.push({
+                baseColor: new Float32Array([col[0] / 255, col[1] / 255, col[2] / 255, col[3] / 255]),
+                glTex: texEntry ? texEntry.tex : null,
+                transparent: Boolean(texEntry?.hasAlpha || col[3] < 250),
+                alphaTest: texEntry?.hasAlpha ? 0.35 : 0,
+                triIdxBuf: createGlBuffer(gl.ELEMENT_ARRAY_BUFFER, triArr),
+                triCount: triArr.length,
+                wireIdxBuf: createGlBuffer(gl.ELEMENT_ARRAY_BUFFER, wireArr),
+                wireCount: wireArr.length,
+                idxType
+              });
+            }
+
+            const dayColors = buildVertexColorFloatArray(g.dayColors, g.numVertices);
+            const nightColors = g.nightColors ? buildVertexColorFloatArray(g.nightColors, g.numVertices) : null;
+
+            meshEntries.push({
+              positions: g.positions,
+              posBuf: createGlBuffer(gl.ARRAY_BUFFER, g.positions),
+              normBuf: createGlBuffer(gl.ARRAY_BUFFER, g.normals),
+              uvBuf: createGlBuffer(gl.ARRAY_BUFFER, g.uvs),
+              dayColorBuf: createGlBuffer(gl.ARRAY_BUFFER, dayColors),
+              nightColorBuf: nightColors ? createGlBuffer(gl.ARRAY_BUFFER, nightColors) : null,
+              groups
+            });
+
+            totalVerts += g.numVertices;
+            totalTris += Math.round(geomTriIdxCount / 3);
+            totalMeshes++;
+          }
+
+          // Auto-detect Z-up vs Y-up orientation
+          autoBaseRot = { x: 0, y: 0, z: 0 };
+          userRotOffset = { x: 0, y: 0, z: 0 };
+          const rawBox = computeModelBox(OfflineMat4.identity());
+          if (rawBox) {
+            const [sx, sy, sz] = rawBox.size;
+            if (sz > sy * 1.25 && sz >= sx) {
+              autoBaseRot.x = -Math.PI / 2;
+            } else if (sx > sy * 1.35 && sx > sz) {
+              autoBaseRot.z = Math.PI / 2;
             }
           }
 
-          if (!nextModel) throw new Error('DFF parser returned an empty model.');
+          fitModel();
 
-          modelRoot = nextModel;
-          modelRoot.traverse(obj => {
-            if (obj.isMesh || obj.isSkinnedMesh) {
-              const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-              for (const mat of mats) {
-                if (!mat) continue;
-                mat.side = THREE.DoubleSide;
-                if (fallbackNote.includes('Proxy')) mat.wireframe = true;
-                else mat.wireframe = wireframe;
-                if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
-                if ('roughness' in mat && mat.roughness === undefined) mat.roughness = 0.82;
-              }
-            }
+          const statusText = txdNote
+            ? `DFF Loaded${txdNote}`
+            : (txdBuffer ? `DFF + TXD Loaded (${texDict.size} textures)` : 'DFF Loaded (No TXD)');
+
+          onStatus({
+            statusText,
+            stats: { vertices: totalVerts, triangles: totalTris, meshes: totalMeshes, materials: totalMats }
           });
-
-          modelPivot = new THREE.Group();
-          modelPivot.add(modelRoot);
-          scene.add(modelPivot);
-
-          modelPivot.updateMatrixWorld(true);
-          const rawBox = new THREE.Box3().setFromObject(modelPivot);
-          const rawSize = rawBox.getSize(new THREE.Vector3());
-          if (rawSize.z > rawSize.y * 1.25 && rawSize.z >= rawSize.x) {
-            modelPivot.rotation.x = -Math.PI / 2;
-          } else if (rawSize.x > rawSize.y * 1.35 && rawSize.x > rawSize.z) {
-            modelPivot.rotation.z = Math.PI / 2;
-          }
-
-          fitModel();
-          const stats = compute3DStats();
-          const baseStatus = fallbackNote
-            ? `DFF Loaded${fallbackNote}`
-            : (txdBuffer ? `DFF + TXD Loaded (${texCount} textures)` : 'DFF Loaded (No TXD)');
-
-          onStatus({ statusText: baseStatus, stats });
         },
-        rotateUprightStep() {
-          if (!modelPivot) return;
-          if (Math.abs(modelPivot.rotation.x) < 0.01) {
-            modelPivot.rotation.x = -Math.PI / 2;
-          } else {
-            modelPivot.rotation.x = 0;
-            modelPivot.rotation.y += Math.PI / 2;
-          }
+        rotateAxis90(axis) {
+          if (meshEntries.length === 0) return;
+          userRotOffset[axis] += Math.PI / 2;
           fitModel();
+        },
+        resetRotation() {
+          if (meshEntries.length === 0) return;
+          userRotOffset = { x: 0, y: 0, z: 0 };
+          fitModel();
+        },
+        setDayNight(dayEnabled) {
+          isDayLight = dayEnabled;
+          if (dayEnabled) {
+            sceneState.bg = [0.125, 0.145, 0.180];
+            sceneState.hemiSky = [0.859, 0.910, 1.0];
+            sceneState.hemiGround = [0.231, 0.200, 0.251];
+            sceneState.hemiIntensity = 1.05;
+            sceneState.keyColor = [1.0, 0.902, 0.769];
+            sceneState.fillColor = [0.35, 0.44, 0.58];
+          } else {
+            sceneState.bg = [0.055, 0.071, 0.102];
+            sceneState.hemiSky = [0.278, 0.376, 0.561];
+            sceneState.hemiGround = [0.075, 0.086, 0.122];
+            sceneState.hemiIntensity = 0.65;
+            sceneState.keyColor = [0.541, 0.706, 1.0];
+            sceneState.fillColor = [0.18, 0.22, 0.32];
+          }
         },
         setWireframe(enabled) {
           wireframe = enabled;
-          modelRoot?.traverse(obj => {
-            if (!obj.isMesh && !obj.isSkinnedMesh) return;
-            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-            mats.forEach(m => { if (m) m.wireframe = enabled; });
-          });
         },
         resetCamera() {
-          if (modelPivot) fitModel();
+          if (meshEntries.length > 0) fitModel();
           else {
-            camera.position.set(2.8, 1.8, 3.8);
-            controls.target.set(0, 0.9, 0);
-            controls.update();
+            camera.eye = [2.8, 1.8, 3.8];
+            camera.target = [0, 0.9, 0];
+            camera.sphericalDelta = { radius: 0, theta: 0, phi: 0 };
+            camera.panOffset = [0, 0, 0];
+            syncSphericalFromEye();
           }
         },
         destroy() {
@@ -4311,14 +5592,17 @@
           disposed = true;
           if (rafId) cancelAnimationFrame(rafId);
           resizeObserver.disconnect();
+          canvas.removeEventListener('contextmenu', onContextMenu);
+          canvas.removeEventListener('pointerdown', onPointerDown);
+          canvas.removeEventListener('pointermove', onPointerMove);
+          canvas.removeEventListener('pointerup', onPointerUp);
+          canvas.removeEventListener('wheel', onWheel);
           clearModel();
-          scene.remove(grid);
-          grid.geometry?.dispose();
-          grid.material?.dispose();
-          controls.dispose();
-          renderer.dispose();
-          renderer.forceContextLoss();
-          renderer.domElement?.remove();
+          gl.deleteBuffer(gridBuffer);
+          gl.deleteProgram(lineProgram);
+          gl.deleteProgram(meshProgram);
+          gl.getExtension('WEBGL_lose_context')?.loseContext();
+          canvas.remove();
         }
       };
     }
@@ -4342,7 +5626,10 @@
       document.getElementById('viewerStatus').textContent = 'Loading 3D engine & DFF/TXD files...';
       document.getElementById('viewerFileSize').textContent = 'DFF: ... | TXD: ...';
       document.getElementById('viewerMeshStats').textContent = 'Verts: - • Tris: - • Meshes: -';
-      document.getElementById('btnViewerWire').style.background = '';
+      document.getElementById('btnViewerWire').classList.remove('active');
+      const dnBtn = document.getElementById('btnViewerDayNight');
+      dnBtn.classList.add('active');
+      dnBtn.textContent = 'Day Light';
       openModal('modalViewer');
 
       try {
@@ -4369,7 +5656,7 @@
         await viewer.loadPed(dffBuffer, txdBuffer);
       } catch (err) {
         console.error(err);
-        document.getElementById('viewerStatus').textContent = `3D Viewer Offline / CDN Error: ${err.message}`;
+        document.getElementById('viewerStatus').textContent = `3D Viewer Error: ${err.message}`;
         toast(`3D Render Error: ${err.message}`, 'error');
       }
     }
@@ -4384,15 +5671,35 @@
 
     document.getElementById('btnCloseViewer').addEventListener('click', closePedViewer);
 
-    document.getElementById('btnViewerRotate').addEventListener('click', () => {
-      store.activeViewer?.rotateUprightStep();
+    document.getElementById('btnViewerRotX').addEventListener('click', () => {
+      store.activeViewer?.rotateAxis90('x');
+    });
+
+    document.getElementById('btnViewerRotY').addEventListener('click', () => {
+      store.activeViewer?.rotateAxis90('y');
+    });
+
+    document.getElementById('btnViewerRotZ').addEventListener('click', () => {
+      store.activeViewer?.rotateAxis90('z');
+    });
+
+    document.getElementById('btnViewerResetRot').addEventListener('click', () => {
+      store.activeViewer?.resetRotation();
     });
 
     document.getElementById('btnViewerWire').addEventListener('click', (e) => {
       if (!store.activeViewer) return;
       const next = !store.activeViewer.wireframe;
       store.activeViewer.setWireframe(next);
-      e.target.style.background = next ? 'var(--accent)' : '';
+      e.target.classList.toggle('active', next);
+    });
+
+    document.getElementById('btnViewerDayNight').addEventListener('click', (e) => {
+      if (!store.activeViewer) return;
+      const nextDay = !store.activeViewer.isDayLight;
+      store.activeViewer.setDayNight(nextDay);
+      e.target.classList.toggle('active', nextDay);
+      e.target.textContent = nextDay ? 'Day Light' : 'Night Light';
     });
 
     document.getElementById('btnViewerReset').addEventListener('click', () => {
@@ -5003,6 +6310,27 @@
 
     document.getElementById('btnCheckClash').addEventListener('click', fixClashesOnly);
 
+    document.getElementById('btnDeleteSelected').addEventListener('click', () => {
+      const count = store.selectedCount;
+      if (count === 0) return;
+      const msg = store.editorMode === 'addon'
+        ? `Delete ${count} selected ped(s) and shift subsequent ped IDs up?`
+        : `Delete ${count} selected ped(s) from the Vanilla IDE+GRP sheet?`;
+      if (!confirm(msg)) return;
+
+      closePedGroupPopover();
+      const deleted = store.deleteSelectedShiftUp();
+      if (deleted > 0) {
+        viewport.render(true);
+        toast(
+          store.editorMode === 'addon'
+            ? `Deleted ${deleted} ped(s) & shifted subsequent IDs up.`
+            : `Deleted ${deleted} ped(s) from the list.`,
+          'info'
+        );
+      }
+    });
+
     document.getElementById('btnOpenVanillaModal').addEventListener('click', openVanillaModeModal);
     document.getElementById('btnEmptyVanillaMode').addEventListener('click', openVanillaModeModal);
 
@@ -5017,7 +6345,7 @@
       pendingVanillaIdeFile = null;
       pendingVanillaGrpFile = null;
 
-      // Reset semua input file & filter pencarian agar tidak ada state nyangkut
+      // Reset all file inputs & search filters to prevent stale state
       const idsToClear = ['vanillaPedGrpInput', 'vanillaModeIdeInput', 'vanillaModeGrpInput', 'searchInput'];
       for (const elId of idsToClear) {
         const el = document.getElementById(elId);
@@ -5102,6 +6430,61 @@
 
     document.getElementById('filterGroup').addEventListener('change', applyFilterAndResetScroll);
     document.getElementById('filterFileStatus').addEventListener('change', applyFilterAndResetScroll);
+
+    // Global Smart Hover Tooltip Engine (Ported from Ped Optimizer)
+    (function initSmartTooltips() {
+      const tipEl = document.getElementById('smartTooltip');
+      if (!tipEl) return;
+      let activeTarget = null;
+
+      function positionTip(e) {
+        const pad = 12;
+        const rect = tipEl.getBoundingClientRect();
+        let x = e.clientX + 14;
+        let y = e.clientY + 16;
+        if (x + rect.width + pad > window.innerWidth) {
+          x = Math.max(pad, e.clientX - rect.width - 12);
+        }
+        if (y + rect.height + pad > window.innerHeight) {
+          y = Math.max(pad, e.clientY - rect.height - 12);
+        }
+        tipEl.style.left = `${x}px`;
+        tipEl.style.top = `${y}px`;
+      }
+
+      document.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('[data-tip]');
+        if (!target) {
+          if (activeTarget) {
+            activeTarget = null;
+            tipEl.classList.remove('visible');
+          }
+          return;
+        }
+        const text = target.getAttribute('data-tip');
+        if (!text) return;
+        activeTarget = target;
+        tipEl.textContent = text;
+        tipEl.classList.add('visible');
+        positionTip(e);
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (activeTarget) positionTip(e);
+      });
+
+      document.addEventListener('mouseout', (e) => {
+        if (activeTarget && !e.relatedTarget?.closest?.('[data-tip]')) {
+          activeTarget = null;
+          tipEl.classList.remove('visible');
+        }
+      });
+
+      document.addEventListener('mousedown', () => {
+        activeTarget = null;
+        tipEl.classList.remove('visible');
+      });
+    })();
 
     // Initialize empty view
     refreshPedGroupDropdownFilter();

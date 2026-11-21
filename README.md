@@ -1,10 +1,10 @@
 # 🧍 GTA SA Ped Add-On Studio
 
 [![Launch Web App](https://img.shields.io/badge/🚀_Launch_Web_App-Live_Demo-2ea44f?style=for-the-badge)](https://redrafgg-afk.github.io/GTA-SA-Ped-Add-On-Studio/)
-[![Version](https://img.shields.io/badge/Version-1.1.0-blue?style=for-the-badge)](#📋-changelog)
+[![Version](https://img.shields.io/badge/Version-1.2.0-blue?style=for-the-badge)](#📋-changelog)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
 
-> **A zero-installation, browser-based bulk spreadsheet workbench & interactive 3D DFF/TXD viewer for creating, merging, validating, and exporting both non-replacing Add-On Pedestrians (`14000+`) and Vanilla Base-Game Pedestrians (`ped.ide` + `pedgrp.dat`) for Grand Theft Auto: San Andreas.**
+> **A 100% offline-capable, zero-installation, browser-based bulk spreadsheet workbench & interactive 3D DFF/TXD viewer for creating, merging, validating, and exporting both non-replacing Add-On Pedestrians (`14000+`) and Vanilla Base-Game Pedestrians (`ped.ide` + `pedgrp.dat`) for Grand Theft Auto: San Andreas.**
 
 ---
 
@@ -48,7 +48,7 @@ Adding brand-new pedestrians—or customizing existing vanilla pedestrian behavi
 - Guess whether a downloaded skin was male, female, elderly, gangster, or emergency personnel without a quick visual preview—often leading to immersion-breaking bugs (such as an elderly woman speaking with a male gangster voice).
 
 ### What Is GTA SA Ped Add-On Studio?
-**GTA SA Ped Add-On Studio** is a lightweight, single-file (`index.html`) web workbench that combines a **virtualized Excel-style bulk spreadsheet editor**, a **dual-mode configuration engine (Add-On Mode & Vanilla IDE+GRP Mode)**, an **automated file-synchronization pipeline**, and a **hardware-accelerated 3D WebGL `.dff`/`.txd` model viewer** directly inside your browser—requiring **zero installation, zero Python/Node dependencies, and zero backend servers**.
+**GTA SA Ped Add-On Studio** is a lightweight, single-file (`index.html`) web workbench that combines a **virtualized Excel-style bulk spreadsheet editor**, a **dual-mode configuration engine (Add-On Mode & Vanilla IDE+GRP Mode)**, an **automated file-synchronization pipeline**, and a **100% offline, native WebGL 3D `.dff`/`.txd` model viewer** directly inside your browser—requiring **zero installation, zero Python/Node dependencies, zero external CDNs, and zero backend servers**.
 
 ### Goals & Vision
 - **Beginner-Friendly Accessibility:** Empower everyday players and novice modders to build massive, crash-free add-on pedestrian packs—or customize original game peds—without memorizing cryptic GTA SA internal flags or voice bank IDs.
@@ -60,8 +60,10 @@ Adding brand-new pedestrians—or customizing existing vanilla pedestrian behavi
 | :--- | :--- |
 | **Dual Editing Modes** | Switch seamlessly between **Add-On Mode (`14000+`)** with full 3D models and **Vanilla Mode (`IDE + GRP`)** to edit original game `ped.ide` & `pedgrp.dat` files directly. |
 | **Virtualized High-Speed Sheet** | Uses viewport virtualization and on-demand dropdown hydration so 1,000+ pedestrian rows scroll, filter, and select instantaneously with zero browser lag. |
+| **100% Offline 3D DFF/TXD Viewer** | Uses a built-in binary RenderWare parser and native WebGL renderer—preview textured models, 3-axis rotations, and Day/Night vertex lighting with zero internet connection. |
 | **Multi-Pack Folder Import** | Parses `data/`, numbered merge folders (`data/1`, `data/2`...), `models/gta3/`, and raw `Add/` skins in one click. |
 | **Range & Bulk Selection** | Supports header `Select All`, `Shift + Click` range selection across hundreds of rows, `Ctrl+F` instant search, and live multi-criteria filtering. |
+| **Bulk Row Deletion** | Removes multiple selected rows at once, cleans up their entries from `pedgrp.dat`, and shifts subsequent Add-On IDs sequentially so no gaps remain. |
 | **Bulk Parameter Cloning** | Copies up to **12 independent parameter toggles** from any reference ped onto hundreds of selected rows simultaneously. |
 | **Rule-Based Smart Randomization** | Generates context-aware combinations (Gender, Pedtype, Stat, AnimGroup, Flags, Voices, canonical LS/SF/LV Ped Groups) with custom Min/Max group counts, strict gang/police rules, and `(x)` blacklists. |
 | **Synchronized Auto-Rename** | Renumbers IDs sequentially (`14000+`) and automatically renames all paired `.dff`, `.txd`, `.ide`, and `pedgrp.dat` entries to match. |
@@ -93,16 +95,16 @@ Adding brand-new pedestrians—or customizing existing vanilla pedestrian behavi
 │     extract `.zip` archive.           │                                      │
 └───────────────────────────────────────┴──────────────────────────────────────┘
 ```
-> **Note on 3D Preview:** All spreadsheet editing, importing, randomization, and exporting work **100% offline**. An active internet connection is only required when clicking the **`👁️` 3D Viewer** button in Add-On Mode so the browser can fetch `three.js` and `dff-loader` from the CDN. In **Vanilla IDE+GRP Mode**, 3D preview is intentionally disabled because `.dff`/`.txd` model files are not loaded.
+> **Note on 3D Preview:** Starting in **v1.2.0**, **all features—including the `👁️` 3D DFF/TXD Viewer—work 100% offline** with zero external CDN dependencies thanks to the built-in binary RenderWare parser and native WebGL renderer. In **Vanilla IDE+GRP Mode**, 3D preview remains intentionally disabled because `.dff`/`.txd` model files are not loaded.
 
 ---
 
 ### 🛡️ Security & VirusTotal Verification
 
-This tool is a pure client-side static HTML/JavaScript file (`index.html`) with zero backend servers, zero tracking, and zero external data uploads—all file reading and ZIP packaging happen locally inside your browser.
+This tool is a pure client-side static HTML/JavaScript file (`index.html`) with zero backend servers, zero tracking, and zero external data uploads—all file reading, 3D parsing, and ZIP packaging happen locally inside your browser.
 
-- **VirusTotal Scan Report (0/60+ Clean):** [View Live VirusTotal Analysis](https://www.virustotal.com/gui/file/40443f3801095c804501e7ed75d3919667363e990fa8fe5664b87ea7e90e35e2)
-- **SHA-256 Checksum:** `40443f3801095c804501e7ed75d3919667363e990fa8fe5664b87ea7e90e35e2`
+- **VirusTotal Scan Report (v1.2.0 — 0/60+ Clean):** [View Live VirusTotal Analysis](https://www.virustotal.com/gui/file/3b1bc3c66062d1fe68655dc067d9e99e3e38eca1e2fc9692a83bb9736953a661)
+- **SHA-256 Checksum:** `3b1bc3c66062d1fe68655dc067d9e99e3e38eca1e2fc9692a83bb9736953a661`
 
 ---
 
@@ -110,8 +112,8 @@ This tool is a pure client-side static HTML/JavaScript file (`index.html`) with 
 
 This project is released as **open-source software** and engineered so any developer or modder can inspect, customize, or fork it effortlessly:
 
-- **Single-File Architecture (`index.html`):** All styling, UI templates, state management, parsers, smart randomization rules, ZIP compression, and WebGL rendering logic reside cleanly inside one self-contained file with zero build steps.
-- **Complete Technical Breakdown ([`code_breakdown.md`](./code_breakdown.md)):** Every module—from `PedStore` $O(1)$ indexing, virtualized viewport rendering (`R01`–`R13`), lazy-hydrated dropdown cells, `MessageChannel` background-safe task scheduling, and Smart Context Sync rules to the 3-tier DFF/TXD fallback loader and binary ZIP writer—is documented in [`code_breakdown.md`](./code_breakdown.md).
+- **Single-File Architecture (`index.html`):** All styling, UI templates, state management, parsers, smart randomization rules, ZIP compression, binary RenderWare `.dff`/`.txd` parsing, and WebGL rendering logic reside cleanly inside one self-contained file with zero build steps.
+- **Complete Technical Breakdown ([`code_breakdown.md`](./code_breakdown.md)):** Every module—from `PedStore` $O(1)$ indexing, virtualized viewport rendering (`R01`–`R13`), lazy-hydrated dropdown cells, `MessageChannel` background-safe task scheduling, and Smart Context Sync rules to the built-in RenderWare DFF/TXD parser and binary ZIP writer—is documented in [`code_breakdown.md`](./code_breakdown.md).
 
 ---
 
@@ -127,19 +129,18 @@ If you already use map mods, vehicle add-ons, or other ped packs, ID `14000` mig
 4. Pick a contiguous block of unused IDs (for example `14000`–`14500` or `18000`–`18500`) to use in **Auto-Rename**.
 
 ### Step B: Expand Ped, Killable ID & Group Limits in Fastman92 Limit Adjuster
-Open `fastman92limitAdjuster_GTASA.ini` and ensure the following limits are enabled and raised above your total ped count:
+Open `fastman92limitAdjuster_GTASA.ini` and ensure the following limits are uncommented (remove `#`) and raised so add-on ped IDs can take damage/be killed and population groups hold more peds:
 
 ```ini
 [ID LIMITS]
-Apply ID limit patch = 1
-Ped models = 650
-Killable model IDs = 20000
+Count of killable model IDs = 20000
 
-[PED LIMITS]
-Apply pedgrp.dat limit patch = 1
-Pedgrp peds limit = 64
+[PED STREAMING]
+Pedgrp peds per group = 100
 ```
-> **Built-In `pedgrp.dat` Limit Monitor (New in v1.1.0):** Default GTA San Andreas only allows **23 pedestrians** per population group line in `pedgrp.dat`. The studio tracks the highest ped count across all groups in real time via the **`Max Peds/Grp`** badge in the toolbar and displays a detailed warning inside the **Export** dialog whenever any group exceeds `23`, telling you the exact `Pedgrp peds limit` value to set in `fastman92limitAdjuster_GTASA.ini`.
+*(Optional: If your total ped count—vanilla + add-ons—exceeds GTA SA's default `278` models, also enable `Apply ID limit patch = 1` under `[ID LIMITS]` and raise `Ped Models` under `[IDE LIMITS]`.)*
+
+> **Built-In `pedgrp.dat` Limit Monitor:** Default GTA San Andreas only allows **23 pedestrians** per population group line in `pedgrp.dat`. The studio tracks the highest ped count across all groups in real time via the **`Max Peds/Grp`** badge in the toolbar and displays a detailed warning inside the **Export** dialog whenever any group exceeds `23`, telling you the exact `Pedgrp peds per group` value to set in `fastman92limitAdjuster_GTASA.ini`.
 
 ---
 
@@ -178,7 +179,26 @@ My_Ped_Project/
 The importer reads every numbered folder in order, links each `.ide` row to its matching `.dff`/`.txd` files, and merges all `pedgrp.dat` group assignments.
 
 ### Scenario 3: Re-Editing Previously Exported Add-On Data
-Select any previously exported Modloader folder containing `data/` (`peds_addons.ide`, `pedgrp.dat`) and `models/gta3/` (`*.dff`, `*.txd`) to continue editing, adding new rows, or previewing models in 3D.
+Select any previously exported Modloader folder containing `data/` (`peds_addons.ide`, `pedgrp.dat`) and `models/gta3/` (`*.dff`, `*.txd`) to continue editing existing rows or previewing models in 3D.
+
+If you also want to **add brand-new skins while modifying your exported pack**, simply place an `Add/` folder inside that same exported directory before importing:
+```text
+My_Exported_Ped_Addon/
+├── Add/                     <-- (Optional) Drop new .dff & .txd skins here to append them
+│   ├── new_gangster.dff
+│   └── new_gangster.txd
+├── data/
+│   ├── peds_addons.ide      <-- Existing exported ped definitions (preserved & editable)
+│   ├── pedgrp.dat           <-- Existing exported spawn groups (preserved & editable)
+│   └── loader.txt
+└── models/
+    └── gta3/
+        ├── 14000.dff        <-- Existing exported models (remain linked & 3D-previewable)
+        ├── 14000.txd
+        ├── 14001.dff
+        └── 14001.txd
+```
+The studio keeps all existing exported IDs, settings, and `pedgrp.dat` assignments intact while automatically pairing any new `.dff`/`.txd` files in `Add/` and assigning them the next available IDs.
 
 ### Scenario 4: Editing Vanilla / Original Game Peds (`Vanilla IDE+GRP Mode`)
 Want to edit Rockstar's original `data/ped.ide` and `data/pedgrp.dat` (or a total-conversion mod's base ped files) directly?
@@ -191,16 +211,20 @@ Want to edit Rockstar's original `data/ped.ide` and `data/pedgrp.dat` (or a tota
 ## 5. Step-by-Step Usage Guide & Real-World Case Studies
 
 ### 5.1 Workspace Overview, Keyboard Shortcuts & Multi-Row Selection
-- **Virtualized Spreadsheet Grid:** Sticky left columns keep the **Checkbox**, **ID**, and **ModelName** pinned while you scroll horizontally across all 18 columns. Only visible rows are mounted in the DOM, keeping scrolling silky smooth even with 1,000+ peds.
+- **Virtualized Spreadsheet Grid:** Sticky left columns keep the **Checkbox**, **Row Index (`#`)**, **ID**, and **ModelName** pinned while you scroll horizontally across all columns. Only visible rows are mounted in the DOM, keeping scrolling silky smooth even with 1,000+ peds.
 - **Instant Search (`Ctrl+F` / `Cmd+F`):** Press **`Ctrl+F`** (or **`Cmd+F`**) anywhere on the page to jump straight to the search box and filter by ID, ModelName, Pedtype, Stat, AnimGroup, Voice, or Ped Group.
-- **Fast Multi-Row Selection:**
+- **Fast Multi-Row Selection & Bulk Deletion:**
   - Click any row checkbox to select/deselect it.
   - Hold **`Shift` + Click** another row checkbox to instantly select or deselect the entire range in between.
   - Use the header checkbox (**`Select All`**) to select all currently filtered rows at once.
+  - Click **`🗑️ Delete Selected`** in the toolbar to remove all checked rows in bulk—automatically cleaning them out of `pedgrp.dat` and re-indexing subsequent Add-On IDs sequentially so no gaps remain.
 
 ### 5.2 Checking Ped Roles Visually with the 3D Ped Viewer
 1. In **Add-On Mode**, click the **`👁️` Eye icon** inside any row's `ModelName` cell.
-2. A resizable floating **3D Ped Preview** window opens, displaying vertex/triangle/mesh counts, file sizes, wireframe toggle, camera reset, and a **`🔄 Rotate 90°`** button (if a model was exported lying flat on the Z-axis).
+2. A resizable floating **3D Ped Preview** window opens **100% offline**, displaying vertex/triangle/mesh counts, parsed TXD texture count, file sizes, and interactive controls:
+   - **Camera Controls:** Left-Click + Drag to **Orbit**, Right-Click + Drag (or `Shift` + Drag) to **Pan**, Mouse Wheel to **Zoom**, and **`🎯 Reset Cam`** to restore the default framing.
+   - **3-Axis Rotation:** **`🔄 Rot X 90°`**, **`🔄 Rot Y 90°`**, **`🔄 Rot Z 90°`**, and **`⟲ Reset Rot`** to orient models exported on any axis.
+   - **Lighting & Mesh Modes:** **`☀️ Day Light` / `🌙 Night Light`** toggle (utilizing RenderWare's prelit `EXTRA_VERT_COL` night vertex colors) and **`🕸️ Wireframe`** overlay.
 3. Close the viewer with **`✕`** or **`Esc`** to immediately release WebGL buffers and GPU memory.
 > *Note: In **Vanilla IDE+GRP Mode**, the `👁️` button is disabled (`IDE+DAT Only`) since `.dff` and `.txd` files are not loaded.*
 
@@ -233,7 +257,7 @@ Rows with invalid or conflicting IDs/names are highlighted in red and counted in
 1. Click **`💾 Export Output`**.
 2. **In Add-On Mode:**
    - *(Recommended)* Attach your game's original **`data/pedgrp.dat`** so the tool merges your add-on peds into existing street groups without wiping out vanilla pedestrians.
-   - Review the **Merged `pedgrp.dat` Peak Limit Check** box—if any group exceeds `23` peds, update `Pedgrp peds limit` in `fastman92limitAdjuster_GTASA.ini` accordingly.
+   - Review the **Merged `pedgrp.dat` Peak Limit Check** box—if any group exceeds `23` peds, update `Pedgrp peds per group` under `[PED STREAMING]` in `fastman92limitAdjuster_GTASA.ini` accordingly.
    - Click **Choose Folder & Export** to write `data/peds_addons.ide`, `data/pedgrp.dat`, `data/loader.txt`, and all synced `models/gta3/*.dff` + `*.txd` files into your Modloader folder (e.g., `modloader/Ped Addons/`).
 3. **In Vanilla IDE+GRP Mode:**
    - Review the `pedgrp.dat` peak limit check, then click **Choose Folder & Export** to save your updated `ped.ide` and `pedgrp.dat` directly into your target folder (or download both files if running locally via `file://`).
@@ -243,17 +267,26 @@ Rows with invalid or conflicting IDs/names are highlighted in red and counted in
 ## 6. Troubleshooting & FAQ
 
 - **Why does the game crash or fail to spawn peds when a group has more than 23 peds?**
-  Default GTA San Andreas has a hardcoded array limit of **23 pedestrians per line** in `pedgrp.dat`. Enable `Apply pedgrp.dat limit patch = 1` in `fastman92limitAdjuster_GTASA.ini` and raise `Pedgrp peds limit` above the peak number shown in the studio's **`Max Peds/Grp`** badge.
+  Default GTA San Andreas has a hardcoded array limit of **23 pedestrians per line** in `pedgrp.dat`. Uncomment `Pedgrp peds per group` under `[PED STREAMING]` in `fastman92limitAdjuster_GTASA.ini` and raise its value above the peak number shown in the studio's **`Max Peds/Grp`** badge.
+- **Why does the 3D Viewer work without internet now?**
+  Starting in **v1.2.0**, the external `three.js` and `dff-loader` CDN dependencies were replaced with a built-in binary RenderWare 3.6 `.dff`/`.txd` parser (supporting `DXT1`/`DXT3`/`DXT5`, 4/8-bit palettes, and RGBA16/32 textures) and a native WebGL renderer embedded directly inside `index.html`.
 - **Why is the `👁️` 3D Viewer button disabled?**
   Either the row has no `.dff` file attached, or you are currently in **`VANILLA IDE+GRP MODE`** (where only `ped.ide` and `pedgrp.dat` text files are loaded without 3D meshes).
-- **A 3D model looks flat/lying down or shows "Untextured Mesh Fallback" in the 3D Viewer.**
-  Click **`🔄 Rotate 90°`** in the viewer toolbar to stand Z-up models upright. Some custom DFF/TXD files use non-standard RenderWare material plugins or console texture compression that the browser WebGL parser skips via safe fallback—these models still work normally inside GTA San Andreas.
+- **A 3D model looks rotated or shows "Untextured Mesh Fallback" in the 3D Viewer.**
+  Use **`🔄 Rot X 90°`**, **`🔄 Rot Y 90°`**, or **`🔄 Rot Z 90°`** (and **`⟲ Reset Rot`**) in the viewer toolbar to orient models upright. Some custom DFF/TXD files use non-standard RenderWare material plugins or console texture compression that the browser WebGL parser skips via safe fallback—these models still work normally inside GTA San Andreas.
 - **Why does Export download a `.zip` instead of writing directly to a folder?**
   Direct folder writing (`File System Access API`) is only permitted by browsers on secure `https://` origins (such as the live GitHub Pages app) or `localhost`. When opened directly from disk via `file://`, the studio automatically packages your files into a ready-to-extract `.zip` archive (or downloads `ped.ide` and `pedgrp.dat` in Vanilla Mode).
 
 ---
 
 ## 📋 Changelog
+
+### v1.2.0
+- **100% Offline Standalone 3D Viewer (Built-In RenderWare Parser & Native WebGL):** Removed all external CDN dependencies (`three.js` and `dff-loader`). Added a built-in binary RenderWare 3.6 `.dff` and `.txd` parser (supporting `DXT1`/`DXT3`/`DXT5` compression, 4-bit/8-bit palettes, `RGBA8888`/`RGB888`/`ARGB1555`/`RGB565`/`ARGB4444` formats, and alpha-cutout detection) with a native WebGL renderer so 3D previews run completely offline.
+- **3-Axis Model Rotation (`Rot X / Y / Z 90°`), `Reset Rot` & Camera Pan:** Replaced the single rotation button with independent X, Y, and Z 90-degree rotation buttons, a one-click rotation reset, and Right-Click / `Shift` + Drag camera panning inside the 3D Viewer.
+- **Day & Night Vertex Lighting Preview (`Day Light` / `Night Light`):** Added a lighting toggle in the 3D Viewer that renders RenderWare prelit night vertex colors (`EXTRA_VERT_COL`) alongside standard daytime directional lighting.
+- **Bulk Row Deletion (`🗑️ Delete Selected`):** Added a toolbar button to delete multiple selected rows at once, automatically cleaning up deleted entries from `pedgrp.dat` groups and compacting subsequent Add-On IDs sequentially so no gaps remain.
+- **Custom Smart Hover Tooltips & Row Index Column (`#`):** Replaced native browser `title` attributes with instant floating tooltips across all buttons, headers, and viewer controls, and added a sticky row index (`#`) column to the spreadsheet.
 
 ### v1.1.0
 - **New Vanilla Ped Editor Mode (`IDE + GRP`):** You can now load your game's original `ped.ide` and `pedgrp.dat` files directly to edit vanilla pedestrian stats, voices, animations, and spawn groups without needing 3D model files—and export both updated files straight back to your folder.

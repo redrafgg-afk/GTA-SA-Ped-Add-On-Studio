@@ -1,13 +1,13 @@
-# 🏗️ Architecture & Code Breakdown (`v1.1.0`)
+# 🏗️ Architecture & Code Breakdown (`v1.2.0`)
 
-This document provides a complete module-by-module engineering breakdown of **GTA SA Ped Add-On Studio (`v1.1.0`)**. The entire application is architected as a self-contained, zero-build single-file web application (`index.html`) combining a virtualized data grid, a dual-mode GTA SA configuration engine (`Add-On` & `Vanilla IDE+GRP`), a rule-based context synthesizer, a pure-JS ZIP packager, and an on-demand WebGL 3D RenderWare (`DFF`/`TXD`) viewer.
+This document provides a complete module-by-module engineering breakdown of **GTA SA Ped Add-On Studio (`v1.2.0`)**. The entire application is architected as a 100% offline-capable, zero-build single-file web application (`index.html`) combining a virtualized data grid, a dual-mode GTA SA configuration engine (`Add-On` & `Vanilla IDE+GRP`), a rule-based context synthesizer, a pure-JS ZIP packager, and a built-in binary RenderWare (`DFF`/`TXD`) parser with a native WebGL 3D viewer.
 
 ---
 
 ## 📑 Table of Contents
 
 1. [High-Level Architecture & Performance Design (`R01`–`R13`)](#1-high-level-architecture--performance-design-r01r13)
-2. [HTML Structure, CSS Layout & Import Map](#2-html-structure-css-layout--import-map)
+2. [HTML Structure, CSS Layout & Smart Tooltip System](#2-html-structure-css-layout--smart-tooltip-system)
 3. [Section 1: GTA SA Reference Dictionaries & Group Normalization](#3-section-1-gta-sa-reference-dictionaries--group-normalization)
 4. [Section 2: Background-Safe Scheduler & Parallel I/O Runner](#4-section-2-background-safe-scheduler--parallel-io-runner)
 5. [Section 3: Centralized `PedStore` State & Query Caching](#5-section-3-centralized-pedstore-state--query-caching)
@@ -18,7 +18,7 @@ This document provides a complete module-by-module engineering breakdown of **GT
 10. [Section 8: Lazy Dropdown Hydration & Virtualized Viewport Renderer](#10-section-8-lazy-dropdown-hydration--virtualized-viewport-renderer)
 11. [Section 9: Floating Ped Group Popover & Delegated Table Events](#11-section-9-floating-ped-group-popover--delegated-table-events)
 12. [Section 10: Bulk Parameter Cloning & Smart Context Sync Randomizer](#12-section-10-bulk-parameter-cloning--smart-context-sync-randomizer)
-13. [Section 11: Lazy-Loaded WebGL 3D Ped Viewer](#13-section-11-lazy-loaded-webgl-3d-ped-viewer)
+13. [Section 11: Built-In Binary RenderWare Parser & Native WebGL 3D Viewer](#13-section-11-built-in-binary-renderware-parser--native-webgl-3d-viewer)
 14. [Section 12: Dual-Mode Export Engine & Zero-Dependency ZIP Writer](#14-section-12-dual-mode-export-engine--zero-dependency-zip-writer)
 15. [Section 13: Event Bindings, Global Shortcuts & Debounced Search](#15-section-13-event-bindings-global-shortcuts--debounced-search)
 
@@ -26,7 +26,7 @@ This document provides a complete module-by-module engineering breakdown of **GT
 
 ## 1. High-Level Architecture & Performance Design (`R01`–`R13`)
 
-In `v1.1.0`, the spreadsheet and data layer were re-engineered around 13 core architectural optimizations (`R01`–`R13`) to support multi-thousand-row datasets without UI stalls:
+The spreadsheet and data layer are engineered around 13 core architectural optimizations (`R01`–`R13`) to support multi-thousand-row datasets without UI stalls:
 
 | ID | Optimization / Pattern | Implementation Summary |
 | :--- | :--- | :--- |
@@ -46,18 +46,20 @@ In `v1.1.0`, the spreadsheet and data layer were re-engineered around 13 core ar
 
 ---
 
-## 2. HTML Structure, CSS Layout & Import Map
+## 2. HTML Structure, CSS Layout & Smart Tooltip System
 
 - **Design Tokens (`:root`):** Dark slate theme (`--bg-app: #0f1319`, `--bg-panel: #161c24`, `--bg-header: #1c2430`) with fixed `--row-height: 31px` to guarantee deterministic virtual scroll math.
 - **Sticky Table Columns:**
   - `sticky-col-0` (`left: 0`, width `34px`): Selection checkbox.
-  - `sticky-col-1` (`left: 34px`, width `72px`): Numeric Ped ID.
-  - `sticky-col-2` (`left: 106px`, min-width `195px`): `ModelName`, `👁️` 3D viewer trigger, and `✕` shift-up delete button.
-- **Dual-Mode UI Components:**
+  - `sticky-col-1` (`left: 34px`, width `44px`): Sticky 1-based Row Index (`#`, `.col-row-num`).
+  - `sticky-col-2` (`left: 78px`, width `72px`): Numeric Ped ID.
+  - `sticky-col-3` (`left: 150px`, min-width `195px`): `ModelName`, `👁️` 3D viewer trigger, and `✕` shift-up delete button.
+- **Dual-Mode & Bulk Toolbar UI Components:**
   - `#activeModeBadge` (`.mode-pill-badge` / `.vanilla`): Displays `ADD-ON MODE` or `VANILLA IDE+GRP MODE`.
+  - `#btnDeleteSelected`: Bulk deletion button enabled whenever `selectedCount > 0`.
   - `#emptyState` (`.mode-grid` / `.mode-card`): Side-by-side launcher cards for **Mode 1: Add-On Ped Studio** and **Mode 2: Vanilla Ped Editor (IDE + GRP)**.
   - `#statMaxGrpPill` & `#pedGrpLimitReport` (`.limit-warn-box`): Real-time and pre-export `pedgrp.dat` peak ped count indicators.
-- **ES Module Import Map:** Maps `three` (`0.170.0`), `three/addons/`, and `dff-loader` (`1.0.1?external=three`) to `esm.sh` so 3D libraries are only fetched on demand when opening the 3D viewer.
+- **Smart Hover Tooltip Engine (`#smartTooltip` / `data-tip`):** Replaces external CDN import maps and native browser `title` delays with a global floating `#smartTooltip` element positioned dynamically with viewport edge clamping (`mouseover`/`mouseout`/`mousedown`/`scroll`) and automatic `title` $\rightarrow$ `data-tip` migration via `MutationObserver`.
 
 ---
 
@@ -88,7 +90,8 @@ Defines all static lookup tables and canonical normalization rules:
 - **Mode State:** `editorMode` (`'addon'` | `'vanilla'`), `vanillaIdeFilename`, `rawVanillaIdeText`, `rawVanillaPedGrpText`, and `vanillaPedGrpText`.
 - **$O(1)$ Indexing & Incremental Metrics:**
   - `rebuildIndicesAndCounters()` populates `rowByUid`, `indexByUid`, `selectedCount`, and `pairedCount`.
-  - `deleteRowShiftUp(uid)` removes a row in $O(1)$ lookup time and shifts subsequent IDs upward in **Add-On Mode** (while preserving original IDs in **Vanilla Mode**).
+  - `deleteRowShiftUp(uid)` removes a single row in $O(1)$ lookup time and shifts subsequent IDs upward in **Add-On Mode** (while preserving original IDs in **Vanilla Mode**).
+  - `deleteSelectedRowsShiftUp()` removes all selected rows in bulk, cleans up their `modelName` references from `pedGroups` across remaining rows, shifts subsequent Add-On IDs (`>= 313`) sequentially upward in **Add-On Mode**, resets `selectedCount = 0`, and rebuilds indices.
 - **Versioned Caches:**
   - `getFilteredRows()` keys its cache on `${q}\x00${grp}\x00${fStat}\x00${this.filterVersion}`, returning the direct `this.rows` reference when no filters are active.
   - `getClashSet()` caches conflicting row UIDs keyed by `this.clashVersion`. In **Add-On Mode**, checks duplicate IDs, `id < 313`, duplicate/empty `modelName` & `txdName`, and `VANILLA_PED_NAMES`. In **Vanilla Mode**, permits `id < 313`, vanilla names, and shared `txdName`s across peds.
@@ -127,6 +130,7 @@ Normalizes directory ingestion across both secure (`https://` / `localhost`) and
 - **`sanitizeGtaAssetName(rawName, fallback)`:** Strips non-alphanumeric characters (allowing only `[a-zA-Z0-9_-]`) and enforces GTA SA's 24-character limit.
 - **`fixClashesOnly()`:** Runs chunked clash resolution across `store.rows`, assigning new sequential IDs and sanitized names while respecting mode-specific rules (preserving vanilla IDs and shared TXDs in Vanilla Mode).
 - **`applyAutoRename(startId, mode)`:** Sequentially renumbers IDs from `startId` and updates `modelName`/`txdName` in `numeric` (`14000`), `prefix` (`ped14000`), or `id_only` mode.
+- **`deleteSingleRowWithFeedback(uid)` & `deleteSelectedRowsWithFeedback()`:** Deletes either a single row or all checked rows via `store.deleteSelectedRowsShiftUp()`, updates stats and selection UI, and displays a toast summary.
 
 ---
 
@@ -137,9 +141,9 @@ Normalizes directory ingestion across both secure (`https://` / `localhost`) and
   - `buildLazySelectCellHtml()` renders resting cells as `<div class="cell-lazy-select">` elements.
   - `hydrateLazySelectCell()` converts a cell into a native `<select>` on click/focus (calling `selectEl.showPicker()` when clicked), and `dehydrateSelectCell()` reverts it back to a `<div>` on `focusout`.
 - **Virtual Scroll Engine (`viewport`):**
-  - Calculates `start` and `end` row indices from `sheetWrapper.scrollTop` and `sheetWrapper.clientHeight` (`ROW_HEIGHT = 31`, `OVERSCAN = 8`).
+  - Calculates `start` and `end` row indices from `sheetWrapper.scrollTop` and `sheetWrapper.clientHeight` (`ROW_HEIGHT = 31`, `OVERSCAN = 8`), rendering each row's sticky 1-based `#` index alongside the checkbox, ID, and ModelName.
   - Wraps mounted rows between two `<tr class="virtual-spacer">` rows and coalesces scroll events via `requestAnimationFrame` (`scheduleRender()`).
-  - `syncVisibleSelectionOnly()` updates checkbox states and `.selected` classes on currently mounted rows without re-rendering HTML.
+  - `syncVisibleSelectionOnly()` and `updateSelectionUI()` update checkbox states, `.selected` classes, and `#btnDeleteSelected` availability without re-rendering table HTML.
 - **`updateStatsBar()`:** Updates `Total Peds`, `Paired DFF+TXD`, `Clashes`, and `Max Peds/Grp` (highlighting in amber when `maxCount > 23`).
 
 ---
@@ -164,13 +168,19 @@ Normalizes directory ingestion across both secure (`https://` / `localhost`) and
 
 ---
 
-## 13. Section 11: Lazy-Loaded WebGL 3D Ped Viewer
+## 13. Section 11: Built-In Binary RenderWare Parser & Native WebGL 3D Viewer
 
-- **On-Demand CDN Loading (`load3DLibraries`):** Dynamically imports `three`, `OrbitControls`, and `dff-loader` from `esm.sh` (with automatic fallback to `cdn.jsdelivr.net`) only when the user clicks `👁️`.
-- **Viewer Lifecycle (`createPedViewerInstance`):**
-  - Sets up an ACES Filmic tone-mapped `WebGLRenderer`, hemisphere + key/fill lighting, ground grid, `OrbitControls`, and `ResizeObserver`.
-  - **3-Tier DFF/TXD Parse Fallback:** Attempts full `TXD + DFF` parsing $\rightarrow$ falls back to a case-insensitive `safeProxyDict` wrapper (bypassing unsupported RenderWare specular/material effect plugins) $\rightarrow$ falls back to untextured geometry $\rightarrow$ falls back to a wireframe studio mannequin proxy so corrupt/exotic DFFs never crash the UI.
-  - Auto-rotates Z-up models upright (`rawSize.z > rawSize.y * 1.25`), centers feet at `Y = 0`, computes vertex/triangle/mesh/material stats, and releases all GPU geometries, materials, textures, and WebGL contexts in `destroy()`.
+- **Zero-Dependency RenderWare 3.6 Binary Constants (`RW`):** Defines RenderWare chunk identifiers (`STRUCT`, `STRING`, `EXTENSION`, `TEXTURE`, `MATERIAL`, `MATLIST`, `FRAMELIST`, `GEOMETRY`, `CLUMP`, `ATOMIC`, `RASTER`, `TEXDICTIONARY`, `EXTRA_VERT_COL`) and raster pixel format flags (`FORMAT_1555`, `FORMAT_565`, `FORMAT_4444`, `FORMAT_8888`, `FORMAT_888`, `FORMAT_555`, `PAL4`, `PAL8`, `MIPMAP`).
+- **Built-In Binary TXD Parser & Software Texture Decoders (`parseRwTxdBuffer`):**
+  - Parses `TEXDICTIONARY` and `RASTER` chunks directly from `ArrayBuffer` (supporting both PC Direct3D 8/9 `D3DFORMAT` FourCC codes and legacy RenderWare raster flags).
+  - Decodes **`DXT1`**, **`DXT3`**, and **`DXT5`** block-compressed textures (`decodeDXT1`, `decodeDXT3`, `decodeDXT5`), **4-bit and 8-bit paletted** textures (`decodePaletted`), and uncompressed **`RGBA8888` / `BGRA8888` / `RGB888` / `ARGB1555` / `RGB565` / `ARGB4444`** formats (`decodeUncompressed`) into RGBA8 `Uint8Array` buffers, detecting alpha transparency (`hasAlpha`) for alpha-cutout rendering.
+- **Built-In Binary DFF Clump Parser (`parseRwDffBuffer`):**
+  - Parses RenderWare `CLUMP` $\rightarrow$ `FRAMELIST` (bone/frame hierarchy & parent transforms), `GEOMETRY` (positions, normals, UVs, day `prelit` vertex colors, triangle indices, per-split material IDs, and `EXTRA_VERT_COL` night vertex colors inside `EXTENSION`), `MATLIST` (diffuse colors, surface properties, and primary texture names), and `ATOMIC` links.
+  - Evaluates hierarchical bone matrices (`computeWorldMatrices`) and falls back gracefully to a procedural studio mannequin (`buildFallbackMannequin`) if a file is missing or malformed.
+- **Native WebGL Renderer & Viewer Lifecycle (`createPedViewerInstance`):**
+  - Compiles custom GLSL vertex/fragment shaders supporting dual vertex color attributes (`aColorDay` & `aColorNight` blended via `uNightMix`), directional + ambient lighting (`uLightMix`), alpha cutout (`discard` when `uAlphaTest > 0.5 && tex.a < 0.25`), and `LINES` wireframe overlay.
+  - Uses built-in 4x4 matrix math (`mat4Perspective`, `mat4LookAt`, `mat4RotateX/Y/Z`, etc.) and a `ResizeObserver`, providing spherical **Orbit** (Left-Drag), **Pan** (Right-Drag or `Shift`+Drag), **Zoom** (Wheel), **`🎯 Reset Cam`**, independent 90° **3-Axis Rotation** (`🔄 Rot X 90°`, `🔄 Rot Y 90°`, `🔄 Rot Z 90°`, `⟲ Reset Rot`), **`☀️ Day Light` / `🌙 Night Light`** toggle, and **`🕸️ Wireframe`** toggle.
+  - Releases all WebGL buffers, textures, shader programs, and `WEBGL_lose_context` resources immediately in `destroy()`.
 
 ---
 
@@ -180,7 +190,7 @@ Normalizes directory ingestion across both secure (`https://` / `localhost`) and
   - `generatePedsAddonsIde()`: Serializes all rows into a standard CRLF `peds ... end` block.
   - `generateVanillaIde()`: Rebuilds the loaded `ped.ide` template line-by-line, replacing edited peds in-place, omitting deleted peds, appending newly added rows before `end`, and preserving all original comments and unrelated sections.
   - `generatePedGrpDat()`: Supports three modes: (1) rebuilding from `rawVanillaPedGrpText` in Vanilla Mode, (2) merging add-on peds into an attached original `pedgrp.dat` without duplicating names, or (3) generating a standalone add-on `pedgrp.dat`.
-- **Pre-Export Limit Check (`updateExportLimitWarningUI`):** Runs `store.analyzeMergedPedGrp()` before export and displays a recommended `Pedgrp peds limit` value for `fastman92limitAdjuster.ini` whenever any group exceeds `23` peds.
+- **Pre-Export Limit Check (`updateExportLimitWarningUI`):** Runs `store.analyzeMergedPedGrp()` before export and displays a recommended `Pedgrp peds per group` value under `[PED STREAMING]` in `fastman92limitAdjuster_GTASA.ini` whenever any group exceeds `23` peds.
 - **Output Delivery:**
   - **Vanilla Mode:** Writes the modified `ped.ide` and `pedgrp.dat` directly into the chosen folder via `showDirectoryPicker` (or triggers dual text-file downloads on `file://`).
   - **Add-On Mode:** Writes `data/peds_addons.ide`, `data/pedgrp.dat`, `data/loader.txt`, and `12`-way parallel streamed `models/gta3/*.dff` + `*.txd` files directly on `https://`, or packs everything into a zero-dependency STORE-mode `.zip` archive via `CRC32_TABLE` and `buildZipBlob()` on `file://`.
@@ -189,6 +199,6 @@ Normalizes directory ingestion across both secure (`https://` / `localhost`) and
 
 ## 15. Section 13: Event Bindings, Global Shortcuts & Debounced Search
 
-- Connects all toolbar and modal action buttons (`#btnImportFolder`, `#btnAddRow`, `#btnAutoRename`, `#btnCheckClash`, `#btnOpenVanillaModal`, `#btnClearAll`, `#btnExportFolder`).
+- Connects all toolbar and modal action buttons (`#btnImportFolder`, `#btnAddRow`, `#btnDeleteSelected`, `#btnAutoRename`, `#btnCheckClash`, `#btnOpenVanillaModal`, `#btnClearAll`, `#btnExportFolder`).
 - Intercepts `Ctrl+F` / `Cmd+F` (`keydown` on `window`) to focus and select `#searchInput`.
 - Debounces `#searchInput` filtering by `120ms` (`applyFilterAndResetScroll`), resetting `scrollTop = 0` and forcing an immediate `viewport.render(true)`.
